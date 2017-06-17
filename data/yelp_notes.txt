@@ -1,0 +1,106 @@
+The Challenge Dataset:
+
+4.1M reviews and 947K tips by 1M users for 144K businesses
+1.1M business attributes, e.g., hours, parking availability, ambience.
+Aggregated check-ins over time for each of the 125K businesses
+200,000 pictures from the included businesses
+
+
+Cities:
+
+U.K.: Edinburgh
+Germany: Karlsruhe
+Canada: Montreal and Waterloo
+U.S.: Pittsburgh, Charlotte, Urbana-Champaign, Phoenix, Las Vegas, Madison, Cleveland
+
+
+Notes on the Dataset
+
+Each file is composed of a single object type, one json-object per-line.
+Take a look at some examples to get you started: https://github.com/Yelp/dataset-examples.
+
+yelp_academic_dataset_business.json
+{
+    "business_id":"encrypted business id",
+    "name":"business name",
+    "neighborhood":"hood name",
+    "address":"full address",
+    "city":"city",
+    "state":"state -- if applicable --",
+    "postal code":"postal code",
+    "latitude":latitude,
+    "longitude":longitude,
+    "stars":star rating, rounded to half-stars,
+    "review_count":number of reviews,
+    "is_open":0/1 (closed/open),
+    "attributes":["an array of strings: each array element is an attribute"],
+    "categories":["an array of strings of business categories"],
+    "hours":["an array of strings of business hours"],
+    "type": "business"
+}
+yelp_academic_dataset_review.json
+{
+    "review_id":"encrypted review id",
+    "user_id":"encrypted user id",
+    "business_id":"encrypted business id",
+    "stars":star rating, rounded to half-stars,
+    "date":"date formatted like 2009-12-19",
+    "text":"review text",
+    "useful":number of useful votes received,
+    "funny":number of funny votes received,
+    "cool": number of cool review votes received,
+    "type": "review"
+}
+yelp_academic_dataset_user.json
+{
+    "user_id":"encrypted user id",
+    "name":"first name",
+    "review_count":number of reviews,
+    "yelping_since": date formatted like "2009-12-19",
+    "friends":["an array of encrypted ids of friends"],
+    "useful":"number of useful votes sent by the user",
+    "funny":"number of funny votes sent by the user",
+    "cool":"number of cool votes sent by the user",
+    "fans":"number of fans the user has",
+    "elite":["an array of years the user was elite"],
+    "average_stars":floating point average like 4.31,
+    "compliment_hot":number of hot compliments received by the user,
+    "compliment_more":number of more compliments received by the user,
+    "compliment_profile": number of profile compliments received by the user,
+    "compliment_cute": number of cute compliments received by the user,
+    "compliment_list": number of list compliments received by the user,
+    "compliment_note": number of note compliments received by the user,
+    "compliment_plain": number of plain compliments received by the user,
+    "compliment_cool": number of cool compliments received by the user,
+    "compliment_funny": number of funny compliments received by the user,
+    "compliment_writer": number of writer compliments received by the user,
+    "compliment_photos": number of photo compliments received by the user,
+    "type":"user"
+}
+yelp_academic_dataset_checkin.json
+{
+    "time":["an array of check ins with the format day-hour:number of check ins from hour to hour+1"],
+    "business_id":"encrypted business id",
+    "type":"checkin"
+}
+yelp_academic_dataset_tip.json
+{
+    "text":"text of the tip",
+    "date":"date formatted like 2009-12-19",
+    "likes":compliment count,
+    "business_id":"encrypted business id",
+    "user_id":"encrypted user id",
+    "type":"tip"
+}
+photos (from the photos auxiliary file)
+This file is formatted as a JSON list of objects.
+
+[
+    {
+        "photo_id": (encrypted photo id),
+        "business_id" : (encrypted business id),
+        "caption" : (the photo caption, if any),
+        "label" : (the category the photo belongs to, if any)
+    },
+    {...}
+]
