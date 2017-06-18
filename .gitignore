@@ -1,3 +1,9 @@
-.DS_Store
 data/2016_yelp_dataset_challenge_photos/
 data/yelp_dataset_challenge_round9/
+data/restaurants/
+data/reviews/
+
+.DS_Store
+.ipynb_checkpoints/
+metastore_db/
+*.log
