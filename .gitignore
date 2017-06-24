@@ -8,3 +8,4 @@ data/reviews/
 metastore_db/
 *.log
 __pycache__
+*.pyc
