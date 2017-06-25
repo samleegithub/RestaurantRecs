@@ -17,8 +17,8 @@ def main():
 
     yelp_api = YelpAPI()
 
-    data = yelp_api.search_restaurants()
-    print(data)
+    data = yelp_api.search_restaurants('98155')
+    print(data.text)
     # tab.insert(data)
 
 
