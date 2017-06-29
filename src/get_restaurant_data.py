@@ -77,6 +77,5 @@ def main():
     convert_to_parquet(spark, restaurants_filename)
 
 
-
 if __name__ == '__main__':
     main()
