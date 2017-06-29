@@ -5,9 +5,9 @@ from pyspark.sql.types import IntegerType, ByteType
 from pyspark.ml.feature import StringIndexer
 import pyspark as ps
 
-spark = (
+SPARK = (
     ps.sql.SparkSession.builder
-    .master("local[4]")
+    .master("local[8]")
     .appName("prep_data")
     .getOrCreate()
 )
@@ -129,7 +129,7 @@ def fix_typos(restaurant_df):
 
 
 def prep_restaurant_data():
-    business_df = spark.read.json(
+    business_df = SPARK.read.json(
         '../data/yelp_dataset_challenge_round9/yelp_academic_dataset_business.json'
     )
 
@@ -141,10 +141,12 @@ def prep_restaurant_data():
         .persist()
     )
 
+    print(restaurant_df.printSchema())
+
     restaurant_df2 = fix_typos(restaurant_df)
 
     restaurant_df2.write.parquet(
-        path='../data/restaurants',
+        path='../data/restaurants_academic',
         mode='overwrite',
         compression='gzip'
     )
@@ -156,7 +158,7 @@ def prep_review_data(restaurant_df):
     # cast stars to ByteType
     # valid values for stars are integers from 0 to 5
     review_df = (
-        spark.read.json(
+        SPARK.read.json(
             path='../data/yelp_dataset_challenge_round9/yelp_academic_dataset_review.json'
         )
         .select(
@@ -202,7 +204,7 @@ def prep_review_data(restaurant_df):
     )
 
     restaurant_review_df2.write.parquet(
-        path='../data/reviews',
+        path='../data/reviews_academic',
         mode='overwrite',
         compression='gzip'
     )

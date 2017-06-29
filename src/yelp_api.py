@@ -33,14 +33,16 @@ class YelpAPI(object):
                 json.dump(token, f)
         return token
 
-    def search_restaurants(self, location, radius=40000, offset=0):
+    def search_restaurants(self, location, radius=40000, sort_by='distance',
+            limit=50, page=0):
         url = 'https://api.yelp.com/v3/businesses/search'
+        offset = page * limit
         params = {
             'location': location,
             'radius': radius,
             'categories': 'restaurants',
-            'sort_by': 'distance',
-            'limit': 50,
+            'sort_by': sort_by,
+            'limit': limit,
             'offset': offset
         }
         return ri.get(url=url, params=params, headers=self.__headers)

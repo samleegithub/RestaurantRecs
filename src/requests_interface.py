@@ -27,6 +27,14 @@ def get(url, params=None, headers=None):
     s = requests.Session()
     s.headers['User-Agent'] = USER_AGENT
     response = s.get(url, params=params, headers=headers)
+
+    num_retries = 10
+    num = 1
+    while num <= 10 and response.status_code != 200:
+        print("WARNING", response.status_code, 'Retry #{}'.format(num))
+        response = s.get(url, params=params, headers=headers)
+        num = num + 1
+
     if response.status_code != 200:
         print("WARNING", response.status_code, response.text)
     else:
@@ -36,6 +44,14 @@ def post(url, params=None, headers=None):
     s = requests.Session()
     s.headers['User-Agent'] = USER_AGENT
     response = s.post(url, params=params, headers=headers)
+
+    num_retries = 10
+    num = 1
+    while num <= 10 and response.status_code != 200:
+        print("WARNING", response.status_code, 'Retry #{}'.format(num))
+        response = s.post(url, params=params, headers=headers)
+        num = num + 1
+
     if response.status_code != 200:
         print("WARNING", response.status_code, response.text)
     else:

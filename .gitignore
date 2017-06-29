@@ -2,6 +2,7 @@ data/2016_yelp_dataset_challenge_photos/
 data/yelp_dataset_challenge_round9/
 data/restaurants/
 data/reviews/
+data/restaurants.json
 
 .DS_Store
 .ipynb_checkpoints/
