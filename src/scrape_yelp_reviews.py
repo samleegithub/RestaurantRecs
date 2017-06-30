@@ -7,6 +7,8 @@ import random
 from pymongo import MongoClient
 import queue
 import threading
+import os
+import json
 
 
 class Worker(threading.Thread):
@@ -90,8 +92,12 @@ def get_user_agents_with_probs():
 
 def add_session_proxy(s):
     # setup luminati proxy
-    username = 'lum-customer-hl_257a91b1-zone-zone1'
-    password = 'ny7nlmcxto2g'
+    luminati_login_filename = os.path.expanduser('~/apis/access/luminati.json')
+    with open(luminati_login_filename) as f:
+        luminati_login = json.load(f)
+
+    username = luminati_login['username']
+    password = luminati_login['password']
     port = 22225
     session_id = random.random()
 
