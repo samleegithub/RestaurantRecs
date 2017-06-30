@@ -8,7 +8,10 @@ def main():
     reviews_table = yelp_db['reviews']
 
     # get html of first page for all saved restaurants
-    yelp_first_page_htmls = reviews_table.find({'page': 0})
+    yelp_first_page_htmls = reviews_table.find({
+        'page': 0,
+        'num_pages': {'$exists': False}
+    })
     bulk = reviews_table.initialize_ordered_bulk_op()
     for item in yelp_first_page_htmls:
         yelp_id = item['yelp_id']
