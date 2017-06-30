@@ -59,7 +59,14 @@ def load_restaurant_ids(spark):
 
 def get_all_max_page_saved(reviews_table):
     saved_yelp_data = reviews_table.aggregate(
-        [{'$group': {'_id': '$yelp_id', 'max_page': {'$max': '$page'}}}]
+        [
+            {'$group': {
+                '_id': '$yelp_id',
+                'max_page': {'$max': '$page'},
+                'num_pages': {'$max': '$num_pages'}
+            }},
+            {'$match': {'max_page' + 1: {'$lt': 'num_pages'}}}
+        ]
     )
 
     return {item['_id'] : item['max_page'] for item in saved_yelp_data}
@@ -134,10 +141,11 @@ def get(s, url, params):
         return response
 
 
-def save_html(reviews_table, yelp_id, page, html_str):
+def save_html(reviews_table, yelp_id, num_pages, page, html_str):
     reviews_table.insert(
         {
             'yelp_id': yelp_id,
+            'num_pages': num_pages,
             'page': page,
             'html_str': html_str
         }
@@ -183,7 +191,7 @@ def scrape_reviews(thread_id, yelp_id, max_page_saved, probs, user_agents,
     )
 
     if max_page_saved is None:
-        save_html(reviews_table, yelp_id, 0, html_str)
+        save_html(reviews_table, yelp_id, num_pages, 0, html_str)
         max_page_saved = 0
         print('Thread[{}]: num_pages: {} saved: {} yelp_id: {}'
             .format(thread_id, num_pages, None, yelp_id))
@@ -201,7 +209,7 @@ def scrape_reviews(thread_id, yelp_id, max_page_saved, probs, user_agents,
             .format(thread_id, page + 1, num_pages, yelp_id))
         response = get(s, url, params)
         html_str = response.text
-        save_html(reviews_table, yelp_id, page, html_str)
+        save_html(reviews_table, yelp_id, num_pages, page, html_str)
 
 
 def create_worker_threads(num_threads, work_queue, queue_lock):
