@@ -8,11 +8,6 @@ USER_AGENT = (
     + '(KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
 )
 
-USER_AGENT2 = (
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 '
-        + '(KHTML, like Gecko) Chrome/34.0.1847.131 Safari/537.36'
-)
-
 def detect_redirection(response):
     if response.history:
         print("Request was redirected")
