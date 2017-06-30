@@ -47,30 +47,53 @@ def process_data(worker):
 
 
 def load_restaurant_ids(spark):
-    return [
+    return {
         row['id']
         for row in (
             spark.read.parquet('../data/restaurants')
             .select(['id'])
             .toLocalIterator()
         )
-    ]
+    }
 
 
 def get_all_max_page_saved(reviews_table):
-    saved_yelp_data = reviews_table.aggregate(
+    all_max_page_saved = reviews_table.aggregate(
         [
             {'$group': {
                 '_id': '$yelp_id',
                 'max_page': {'$max': '$page'},
                 'num_pages': {'$max': '$num_pages'}
             }},
-            {'$match': {'max_page' + 1: {'$lt': 'num_pages'}}}
+            {"$project": {
+                "max_page": 1,
+                "num_pages": 1,
+                "pages_eq": {"$eq": [{'$add': ['$max_page', 1]}, "$num_pages"]}
+            }},
+            {"$match": {"pages_eq": False}}
         ]
     )
 
-    return {item['_id'] : item['max_page'] for item in saved_yelp_data}
+    all_saved = reviews_table.aggregate(
+        [
+            {'$group': {
+                '_id': '$yelp_id',
+                'max_page': {'$max': '$page'},
+                'num_pages': {'$max': '$num_pages'}
+            }},
+            {"$project": {
+                "max_page": 1,
+                "num_pages": 1,
+                "pages_eq": {"$eq": [{'$add': ['$max_page', 1]}, "$num_pages"]}
+            }},
+            {"$match": {"pages_eq": True}}
+        ]
+    )
 
+    return (
+        {item['_id'] : item['max_page'] for item in all_max_page_saved},
+        {item['_id'] for item in all_saved}
+    )
 
 def get_user_agents_with_probs():
     user_agents_with_probs = np.array([
@@ -227,21 +250,23 @@ def main():
     yelp_db = client['yelp']
     reviews_table = yelp_db['reviews']
 
+    all_max_page_saved, all_saved = get_all_max_page_saved(reviews_table)
+
     spark = (
         ps.sql.SparkSession.builder
         # .master("local[8]")
         .appName("scrape_yelp_reviews")
         .getOrCreate()
     )
-    yelp_ids = load_restaurant_ids(spark)
+    all_yelp_ids = load_restaurant_ids(spark)
 
-    all_max_page_saved = get_all_max_page_saved(reviews_table)
-    # print(all_max_page_saved)
+    list_yelp_ids = list(all_yelp_ids - all_saved)
 
-    print('Total Restaurants: {0}'.format(len(yelp_ids)))
-    print('Total Restaurants Saved: {0}'.format(len(all_max_page_saved)))
-    print('Total Restaurants Left: {0}'.format(
-        len(yelp_ids) - len(all_max_page_saved)))
+    print('Total Restaurants: {0}'.format(len(all_yelp_ids)))
+    print('Total Restaurants In Progress: {0}'.format(len(all_max_page_saved)))
+    print('Total Restaurants Saved: {0}'.format(len(all_saved)))
+    print('Total Restaurants Left: {0}'
+        .format(len(all_yelp_ids) - len(all_saved)))
 
     probs, user_agents = get_user_agents_with_probs()
 
@@ -251,7 +276,7 @@ def main():
     threads = create_worker_threads(num_threads, work_queue, queue_lock)
 
     # Fill the work queue
-    for yelp_id in yelp_ids:
+    for yelp_id in list_yelp_ids:
         if yelp_id in all_max_page_saved:
             max_page_saved = all_max_page_saved[yelp_id]
         else:
