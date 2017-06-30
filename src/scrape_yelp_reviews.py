@@ -175,12 +175,15 @@ def scrape_reviews(thread_id, yelp_id, max_page_saved, probs, user_agents,
         .getText()
         .split()[3]
     )
-    print('Thread[{}]: num_pages: {} saved: {} yelp_id: {}'
-        .format(thread_id, num_pages, max_page_saved + 1, yelp_id))
 
     if max_page_saved is None:
         save_html(reviews_table, yelp_id, 0, html_str)
         max_page_saved = 0
+        print('Thread[{}]: num_pages: {} saved: {} yelp_id: {}'
+            .format(thread_id, num_pages, None, yelp_id))
+    else:
+        print('Thread[{}]: num_pages: {} saved: {} yelp_id: {}'
+            .format(thread_id, num_pages, max_page_saved + 1, yelp_id))
 
     for page in range(max_page_saved + 1, num_pages):
         sleep_time = get_random_sleep_time()
