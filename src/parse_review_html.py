@@ -30,21 +30,21 @@ def parse_html(raw_html_data):
             .split()[3]
         )
 
+        sidebars = soup.find_all('div', class_='review-sidebar')
+        for sidebar in sidebars:
+            users = sidebar.find_all('a', class_='user-display-name')
+            for user in users:
+                print(user['href'].split('=')[1])
 
-
-        soup2 = soup.find_all('div', class_='review--with-sidebar')
-        for item in soup2:
-            print(item)
-
-        # ratings = soup.find_all('div', class_='rating-large')
-        # print(len(ratings))
-        # for rating in ratings:
-        #     print(rating)
-        #     print(float(rating['title'].split()[0]))
-
+        reviews = soup.find_all('div', class_='review-content')
+        for review in reviews:
+            ratings = review.find_all('div', class_='rating-large')
+            for rating in ratings:
+                print(int(rating['title'].split()[0].split('.')[0]))
 
         print('{}/{}'.format(page, num_pages))
-        print(len(soup2))
+        print(len(reviews))
+        print(restaurant_id)
         exit()
 
 
