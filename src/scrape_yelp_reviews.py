@@ -58,7 +58,7 @@ def load_restaurant_ids(spark):
 
 
 def get_all_max_page_saved(reviews_table):
-    all_max_page_saved = reviews_table.aggregate(
+    all_max_page_partially_saved = reviews_table.aggregate(
         [
             {'$group': {
                 '_id': '$yelp_id',
@@ -91,7 +91,7 @@ def get_all_max_page_saved(reviews_table):
     )
 
     return (
-        {item['_id'] : item['max_page'] for item in all_max_page_saved},
+        {item['_id'] : item['max_page'] for item in all_max_page_partially_saved},
         {item['_id'] for item in all_saved}
     )
 
