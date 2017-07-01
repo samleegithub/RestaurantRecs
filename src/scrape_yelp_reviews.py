@@ -73,10 +73,12 @@ def get_saved_pages_info(reviews_table):
     for restaurant in restaurants:
         num_pages = restaurant['_id']['num_pages']
         last_page_saved = restaurant['last_page_saved']
+        yelp_id = restaurant['_id']['yelp_id']
+
         if last_page_saved + 1 < num_pages:
-            partially_saved[restaurant['_id']['yelp_id']] = (last_page_saved, num_pages)
+            partially_saved[yelp_id] = (last_page_saved, num_pages)
         else:
-            fully_saved.add(restaurant['_id']['yelp_id'])
+            fully_saved.add(yelp_id)
 
     return partially_saved, fully_saved
 
@@ -142,14 +144,15 @@ def create_requests_session(probs, user_agents):
     return s
 
 
-def get(s, url, params):
+def get(thread_id, s, url, params):
     response = s.get(url, params=params)
 
     max_retries = 10
     num_retries = 1
     # status_code 503 means that Yelp is denying access
     while response.status_code == 503 and num_retries <= max_retries:
-        print('Got 503 response. Retry #{}'.format(num_retries))
+        print('Thread[{}]: Got 503 response. Retry #{}'
+            .format(thread_id, num_retries))
         # try to get a new ip address by adding a new random proxy session
         s = add_session_proxy(s)
         response = s.get(url, params=params)
@@ -197,7 +200,7 @@ def scrape_reviews(thread_id, yelp_id, last_page_saved, num_pages, probs,
     params = {}
 
     if last_page_saved is None:
-        response = get(s, url, params)
+        response = get(thread_id, s, url, params)
         html_str = response.text
 
         soup = BeautifulSoup(html_str, 'html.parser')
@@ -206,7 +209,7 @@ def scrape_reviews(thread_id, yelp_id, last_page_saved, num_pages, probs,
             .getText()
             .split()[3]
         )
-        
+
         print('Thread[{}]: num_pages: {} saved: {} yelp_id: {}'
             .format(thread_id, num_pages, None, yelp_id))
 
@@ -224,7 +227,7 @@ def scrape_reviews(thread_id, yelp_id, last_page_saved, num_pages, probs,
         params['start'] = reviews_per_page * page
         print('Thread[{}]: page: {}/{} yelp_id: {}'
             .format(thread_id, page + 1, num_pages, yelp_id))
-        response = get(s, url, params)
+        response = get(thread_id, s, url, params)
         html_str = response.text
         save_html(reviews_table, yelp_id, num_pages, page, html_str)
 
@@ -281,16 +284,20 @@ def main():
         queue_lock.release()
 
     print('Done filling queue')
+
     # Wait for work queue to empty
     while not work_queue.empty():
         pass
+
     print('queue is empty!')
-    print('Notify threads it is time to exit')
+
     # Notify threads it's time to exit
+    print('Notify threads it is time to exit')
     for t in threads:
         t.stop()
-    print('waiting for threads to complete')
+
     # Wait for all threads to complete
+    print('waiting for threads to complete')
     for t in threads:
         t.join()
 
