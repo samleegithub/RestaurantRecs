@@ -186,10 +186,7 @@ def get_random_sleep_time():
 
 def scrape_reviews(thread_id, yelp_id, last_page_saved, num_pages, probs,
         user_agents, reviews_table):
-    sleep_time = get_random_sleep_time()
-    # print('Thread[{}]: Sleep {} seconds ...'
-    #     .format(thread_id, sleep_time))
-    time.sleep(sleep_time)
+    time.sleep(get_random_sleep_time())
 
     s = create_requests_session(probs, user_agents)
 
@@ -204,11 +201,13 @@ def scrape_reviews(thread_id, yelp_id, last_page_saved, num_pages, probs,
         html_str = response.text
 
         soup = BeautifulSoup(html_str, 'html.parser')
-        num_pages = int(
-            soup.find('div', class_='page-of-pages')
-            .getText()
-            .split()[3]
-        )
+        tag_page_of_pages = soup.find('div', class_='page-of-pages')
+        if tag_page_of_pages is not None:
+            num_pages = int(tag_page_of_pages.getText().split()[3])
+        else:
+            print('Thread[{}]: ERROR: page-of-pages tag for {} is missing!'
+                .format(thread_id, yelp_id))
+            return
 
         print('Thread[{}]: num_pages: {} saved: {} yelp_id: {}'
             .format(thread_id, num_pages, None, yelp_id))
@@ -220,10 +219,7 @@ def scrape_reviews(thread_id, yelp_id, last_page_saved, num_pages, probs,
         .format(thread_id, num_pages, last_page_saved + 1, yelp_id))
 
     for page in range(last_page_saved + 1, num_pages):
-        sleep_time = get_random_sleep_time()
-        # print('Thread[{}]: Sleep {} seconds ...'
-        #     .format(thread_id, sleep_time))
-        time.sleep(sleep_time)
+        time.sleep(get_random_sleep_time())
         params['start'] = reviews_per_page * page
         print('Thread[{}]: page: {}/{} yelp_id: {}'
             .format(thread_id, page + 1, num_pages, yelp_id))
