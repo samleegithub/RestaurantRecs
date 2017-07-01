@@ -15,6 +15,10 @@ def load_html_from_db():
 
 
 def parse_html(raw_html_data):
+    user_list = []
+    user_id_list = []
+    rating_list = []
+    count = 0
     for restaurant_id, html_str in raw_html_data:
         soup = BeautifulSoup(html_str, 'html.parser')
 
@@ -34,18 +38,27 @@ def parse_html(raw_html_data):
         for sidebar in sidebars:
             users = sidebar.find_all('a', class_='user-display-name')
             for user in users:
-                print(user['href'].split('=')[1])
+                user_list.append(user.get_text())
+                user_id_list.append(user['href'].split('=')[1])
 
         reviews = soup.find_all('div', class_='review-content')
         for review in reviews:
             ratings = review.find_all('div', class_='rating-large')
             for rating in ratings:
-                print(int(rating['title'].split()[0].split('.')[0]))
+                rating_list.append(int(rating['title'].split()[0].split('.')[0]))
 
-        print('{}/{}'.format(page, num_pages))
-        print(len(reviews))
         print(restaurant_id)
-        exit()
+        print('{}/{}'.format(page, num_pages))
+        print(len(ratings))
+
+        count = count + 1
+        if count == 2:
+            break
+
+    for user, user_id, rating in zip(user_list, user_id_list, rating_list):
+        print(rating, user_id, user)
+
+    exit()
 
 
 def main():

@@ -57,43 +57,29 @@ def load_restaurant_ids(spark):
     }
 
 
-def get_all_max_page_saved(reviews_table):
-    all_max_page_partially_saved = reviews_table.aggregate(
+def get_saved_pages_info(reviews_table):
+    restaurants = reviews_table.aggregate(
         [
             {'$group': {
-                '_id': '$yelp_id',
-                'max_page': {'$max': '$page'},
-                'num_pages': {'$max': '$num_pages'}
-            }},
-            {"$project": {
-                "max_page": 1,
-                "num_pages": 1,
-                "pages_eq": {"$eq": [{'$add': ['$max_page', 1]}, "$num_pages"]}
-            }},
-            {"$match": {"pages_eq": False}}
+                '_id': {'yelp_id': '$yelp_id', 'num_pages': '$num_pages'},
+                'last_page_saved': {'$max': '$page'}
+            }}
         ]
     )
 
-    all_saved = reviews_table.aggregate(
-        [
-            {'$group': {
-                '_id': '$yelp_id',
-                'max_page': {'$max': '$page'},
-                'num_pages': {'$max': '$num_pages'}
-            }},
-            {"$project": {
-                "max_page": 1,
-                "num_pages": 1,
-                "pages_eq": {"$eq": [{'$add': ['$max_page', 1]}, "$num_pages"]}
-            }},
-            {"$match": {"pages_eq": True}}
-        ]
-    )
+    partially_saved = {}
+    fully_saved = set()
 
-    return (
-        {item['_id'] : item['max_page'] for item in all_max_page_partially_saved},
-        {item['_id'] for item in all_saved}
-    )
+    for restaurant in restaurants:
+        num_pages = restaurant['_id']['num_pages']
+        last_page_saved = restaurant['last_page_saved']
+        if last_page_saved + 1 < num_pages:
+            partially_saved[restaurant['_id']['yelp_id']] = (last_page_saved, num_pages)
+        else:
+            fully_saved.add(restaurant['_id']['yelp_id'])
+
+    return partially_saved, fully_saved
+
 
 def get_user_agents_with_probs():
     user_agents_with_probs = np.array([
@@ -158,6 +144,17 @@ def create_requests_session(probs, user_agents):
 
 def get(s, url, params):
     response = s.get(url, params=params)
+
+    max_retries = 10
+    num_retries = 1
+    # status_code 503 means that Yelp is denying access
+    while response.status_code == 503 and num_retries <= max_retries:
+        print('Got 503 response. Retry #{}'.format(num_retries))
+        # try to get a new ip address by adding a new random proxy session
+        s = add_session_proxy(s)
+        response = s.get(url, params=params)
+        num_retries += 1
+
     if response.status_code != 200:
         print("WARNING", response.status_code, response.text)
     else:
@@ -184,8 +181,8 @@ def get_random_sleep_time():
     return sleep_time
 
 
-def scrape_reviews(thread_id, yelp_id, max_page_saved, probs, user_agents,
-        reviews_table):
+def scrape_reviews(thread_id, yelp_id, last_page_saved, num_pages, probs,
+        user_agents, reviews_table):
     sleep_time = get_random_sleep_time()
     # print('Thread[{}]: Sleep {} seconds ...'
     #     .format(thread_id, sleep_time))
@@ -199,30 +196,27 @@ def scrape_reviews(thread_id, yelp_id, max_page_saved, probs, user_agents,
     # url = 'https://lumtest.com/echo.json' # test url to confirm proxy working
     params = {}
 
-    # print('Thread[{}]: page: 0 yelp_id: {}'
-    #     .format(thread_id, yelp_id))
-    response = get(s, url, params)
-    html_str = response.text
+    if last_page_saved is None:
+        response = get(s, url, params)
+        html_str = response.text
 
-    # print('Thread[{}]: Scraping number of pages ...'
-    #     .format(thread_id))
-    soup = BeautifulSoup(html_str, 'html.parser')
-    num_pages = int(
-        soup.find('div', class_='page-of-pages')
-        .getText()
-        .split()[3]
-    )
-
-    if max_page_saved is None:
-        save_html(reviews_table, yelp_id, num_pages, 0, html_str)
-        max_page_saved = 0
+        soup = BeautifulSoup(html_str, 'html.parser')
+        num_pages = int(
+            soup.find('div', class_='page-of-pages')
+            .getText()
+            .split()[3]
+        )
+        
         print('Thread[{}]: num_pages: {} saved: {} yelp_id: {}'
             .format(thread_id, num_pages, None, yelp_id))
-    else:
-        print('Thread[{}]: num_pages: {} saved: {} yelp_id: {}'
-            .format(thread_id, num_pages, max_page_saved + 1, yelp_id))
 
-    for page in range(max_page_saved + 1, num_pages):
+        save_html(reviews_table, yelp_id, num_pages, 0, html_str)
+        last_page_saved = 0
+
+    print('Thread[{}]: num_pages: {} saved: {} yelp_id: {}'
+        .format(thread_id, num_pages, last_page_saved + 1, yelp_id))
+
+    for page in range(last_page_saved + 1, num_pages):
         sleep_time = get_random_sleep_time()
         # print('Thread[{}]: Sleep {} seconds ...'
         #     .format(thread_id, sleep_time))
@@ -250,7 +244,7 @@ def main():
     yelp_db = client['yelp']
     reviews_table = yelp_db['reviews']
 
-    all_max_page_saved, all_saved = get_all_max_page_saved(reviews_table)
+    partially_saved, fully_saved = get_saved_pages_info(reviews_table)
 
     spark = (
         ps.sql.SparkSession.builder
@@ -260,13 +254,12 @@ def main():
     )
     all_yelp_ids = load_restaurant_ids(spark)
 
-    list_yelp_ids = list(all_yelp_ids - all_saved)
+    yelp_ids_to_download = list(all_yelp_ids - fully_saved)
 
     print('Total Restaurants: {0}'.format(len(all_yelp_ids)))
-    print('Total Restaurants In Progress: {0}'.format(len(all_max_page_saved)))
-    print('Total Restaurants Saved: {0}'.format(len(all_saved)))
-    print('Total Restaurants Left: {0}'
-        .format(len(all_yelp_ids) - len(all_saved)))
+    print('Total Restaurants In Progress: {0}'.format(len(partially_saved)))
+    print('Total Restaurants Saved: {0}'.format(len(fully_saved)))
+    print('Total Restaurants Left: {0}'.format(len(yelp_ids_to_download)))
 
     probs, user_agents = get_user_agents_with_probs()
 
@@ -276,12 +269,13 @@ def main():
     threads = create_worker_threads(num_threads, work_queue, queue_lock)
 
     # Fill the work queue
-    for yelp_id in list_yelp_ids:
-        if yelp_id in all_max_page_saved:
-            max_page_saved = all_max_page_saved[yelp_id]
+    for yelp_id in yelp_ids_to_download:
+        if yelp_id in partially_saved:
+            last_page_saved, num_pages = partially_saved[yelp_id]
         else:
-            max_page_saved = None
-        data = (yelp_id, max_page_saved, probs, user_agents, reviews_table)
+            last_page_saved, num_pages = None, None
+        data = (yelp_id, last_page_saved, num_pages, probs, user_agents,
+            reviews_table)
         queue_lock.acquire()
         work_queue.put(data)
         queue_lock.release()
