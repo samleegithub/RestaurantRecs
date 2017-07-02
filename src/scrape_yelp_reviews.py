@@ -75,7 +75,7 @@ def get_saved_pages_info(reviews_table):
         last_page_saved = restaurant['last_page_saved']
         yelp_id = restaurant['_id']['yelp_id']
 
-        if last_page_saved + 1 < num_pages:
+        if last_page_saved < num_pages:
             partially_saved[yelp_id] = (last_page_saved, num_pages)
         else:
             fully_saved.add(yelp_id)
@@ -213,16 +213,16 @@ def scrape_reviews(thread_id, yelp_id, last_page_saved, num_pages, probs,
             .format(thread_id, num_pages, None, yelp_id))
 
         save_html(reviews_table, yelp_id, num_pages, 0, html_str)
-        last_page_saved = 0
+        last_page_saved = 1
 
     print('Thread[{}]: num_pages: {} saved: {} yelp_id: {}'
-        .format(thread_id, num_pages, last_page_saved + 1, yelp_id))
+        .format(thread_id, num_pages, last_page_saved, yelp_id))
 
-    for page in range(last_page_saved + 1, num_pages):
+    for page in range(last_page_saved + 1, num_pages + 1):
         time.sleep(get_random_sleep_time())
-        params['start'] = reviews_per_page * page
+        params['start'] = reviews_per_page * (page - 1)
         print('Thread[{}]: page: {}/{} yelp_id: {}'
-            .format(thread_id, page + 1, num_pages, yelp_id))
+            .format(thread_id, page, num_pages, yelp_id))
         response = get(thread_id, s, url, params)
         html_str = response.text
         save_html(reviews_table, yelp_id, num_pages, page, html_str)
