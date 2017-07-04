@@ -23,6 +23,9 @@ def get(url, params=None, headers=None):
     s.headers['User-Agent'] = USER_AGENT
     response = s.get(url, params=params, headers=headers)
 
+    if response.status_code == 400:
+        return response
+
     num_retries = 10
     num = 1
     while num <= 10 and response.status_code != 200:

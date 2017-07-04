@@ -1,8 +1,10 @@
 dump/
 data/academic/
 data/restaurants/
+data/restaurants_by_state/
 data/ratings/
 data/restaurants.json
+data/restaurants_by_state.json
 data/ratings.json
 data/product_labels.txt
 data/user_labels.txt

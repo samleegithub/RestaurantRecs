@@ -10,8 +10,11 @@ def main():
         .getOrCreate()
     )
 
-    restaurant_ids = load_restaurant_ids(spark)
-    print('Restaurants: {}'.format(len(restaurant_ids)))
+    restaurants_df = spark.read.parquet('../data/restaurants')
+    print('Restaurants count: {}'.format(restaurants_df.count()))
+
+    restaurants_by_state_df = spark.read.parquet('../data/restaurants_by_state')
+    print('Restaurants_by_state count: {}'.format(restaurants_by_state_df.count()))
 
 
 if __name__ == '__main__':

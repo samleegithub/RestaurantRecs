@@ -18,8 +18,8 @@ def load_html_from_db():
 
     Outputs
     =======
-    raw_html_data       Generator the returns (yelp_id, html_str) for each page
-                        of Yelp restaurant reviews.
+    raw_html_data       Generator that returns (yelp_id, html_str) for each
+                        page of Yelp restaurant reviews.
     '''
     client = MongoClient()
     yelp_db = client['yelp']

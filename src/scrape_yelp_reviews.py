@@ -46,11 +46,11 @@ def process_data(worker):
         time.sleep(1)
 
 
-def load_restaurant_ids(spark):
+def load_restaurant_ids(spark, restaurants_parquet_path):
     return {
         row['id']
         for row in (
-            spark.read.parquet('../data/restaurants')
+            spark.read.parquet(restaurants_parquet_path)
             .select(['id'])
             .toLocalIterator()
         )
@@ -239,9 +239,16 @@ def create_worker_threads(num_threads, work_queue, queue_lock):
 
 
 def main():
+    # Add suffix for data downloaded by state instead of the original method
+    # which was by city (Seattle and San Francisco)
+    # suffix = '_by_state'
+    suffix = ''
+    restaurants_parquet_path = '../data/restaurants{}'.format(suffix)
+    table_name = 'reviews{}'.format(suffix)
+
     client = MongoClient()
     yelp_db = client['yelp']
-    reviews_table = yelp_db['reviews']
+    reviews_table = yelp_db[table_name]
 
     partially_saved, fully_saved = get_saved_pages_info(reviews_table)
 
@@ -251,7 +258,7 @@ def main():
         .appName("scrape_yelp_reviews")
         .getOrCreate()
     )
-    all_yelp_ids = load_restaurant_ids(spark)
+    all_yelp_ids = load_restaurant_ids(spark, restaurants_parquet_path)
 
     yelp_ids_to_download = list(all_yelp_ids - fully_saved)
 

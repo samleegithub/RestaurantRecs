@@ -9,7 +9,7 @@ class RestaurantRecommender(object):
     Implementation of a restaurant recomendation model.
     '''
 
-    def __init__(self):
+    def __init__(self, rank=10):
         '''
         Setup logger
 
@@ -22,18 +22,19 @@ class RestaurantRecommender(object):
         None
         '''
         self.logger_ = logging.getLogger('resto-reco')
+        self.rank = 10
 
 
-    def fit(self, reviews):
+    def fit(self, ratings):
         '''
         Fit ALS model using reviews as training data.
 
         Parameters
         ==========
-        reviews (pyspark.sql.DataFrame)
+        ratings (pyspark.sql.DataFrame)
             Data used to train ALS model. Columns are 'user_id',
-            'business_id', and 'stars'. Values of user_id and business_id
-            must be numeric. Values of stars range from 1 to 5.
+            'product_id', and 'rating'. Values of user_id and product_id
+            must be numeric. Values of rating range from 1 to 5.
 
         Returns
         =======
@@ -41,38 +42,38 @@ class RestaurantRecommender(object):
         '''
         self.logger_.info("starting fit")
 
-        self.average_ = reviews.agg(F.avg(F.col('stars'))).first()[0]
+        self.average_ = ratings.agg(F.avg(F.col('rating'))).first()[0]
 
-        users = reviews.groupBy('user_id')
+        users = ratings.groupBy('user_id')
 
         self.average_rating_user_ = defaultdict(
             int,
             (
-                (row['user_id'], row['avg(stars)'] - self.average_)
-                for row in users.avg('stars').collect()
+                (row['user_id'], row['avg(rating)'] - self.average_)
+                for row in users.avg('rating').collect()
             )
         )
 
-        restaurants = reviews.groupBy('business_id')
+        restaurants = ratings.groupBy('product_id')
 
         self.average_rating_restaurant_ = defaultdict(
             int,
             (
-                (row['business_id'], row['avg(stars)'] - self.average_)
-                for row in restaurants.avg('stars').collect()
+                (row['product_id'], row['avg(rating)'] - self.average_)
+                for row in restaurants.avg('rating').collect()
             )
         )
 
         als_model = ALS(
-            itemCol='business_id',
             userCol='user_id',
-            ratingCol='stars',
+            itemCol='product_id',
+            ratingCol='rating',
             nonnegative=True,
             regParam=0.1,
-            rank=10
+            rank=self.rank
         )
 
-        self.recommender_ = als_model.fit(reviews)
+        self.recommender_ = als_model.fit(ratings)
 
         self.logger_.info("finishing fit")
         return(self)
@@ -80,20 +81,20 @@ class RestaurantRecommender(object):
 
     def transform(self, requests_df):
         '''
-        Predicts the stars rating for requested users and restaurants.
+        Predicts the rating for requested users and restaurants.
 
         Parameters
         ==========
         requests_df (pyspark.sql.DataFrame)
-            Data used to request predictions of stars ratings. Columns are
-            'user_id' and 'business_id'. Values of 'user_id' and
-            'business_id' must be numeric.
+            Data used to request predictions of ratings. Columns are 'user_id'
+            and 'product_id'. Values of 'user_id' and 'product_id' must be
+            numeric.
 
         Returns
         =======
         predictions (pyspark.sql.DataFrame)
-            Predictions with 'user_id', 'business_id' and 'prediction', the
-            predicted value for stars. Stars will be a floating point number.
+            Predictions with 'user_id', 'product_id' and 'prediction', the
+            predicted value for rating. Rating will be a floating point number.
 
         '''
         self.logger_.info("starting predict")
@@ -107,10 +108,10 @@ class RestaurantRecommender(object):
         average_rating_restaurant = self.average_rating_restaurant_
 
         get_baseline_rating = F.UserDefinedFunction(
-            lambda user_id, business_id :
+            lambda user_id, product_id :
                 average
                 + average_rating_user[user_id]
-                + average_rating_restaurant[business_id],
+                + average_rating_restaurant[product_id],
             T.FloatType()
         )
 
@@ -120,7 +121,7 @@ class RestaurantRecommender(object):
                 'fillblanks',
                 get_baseline_rating(
                     predictions_df['user_id'],
-                    predictions_df['business_id']
+                    predictions_df['product_id']
                 )
             )
         )
@@ -130,9 +131,9 @@ class RestaurantRecommender(object):
         predictions_df3 = (
             predictions_df2
             .select(
-                'business_id',
                 'user_id',
-                'stars',
+                'product_id',
+                'rating',
                 F.nanvl('prediction', 'fillblanks').alias('prediction')
             )
         )

@@ -2,6 +2,7 @@ import json
 from yelp_api import YelpAPI
 from collections import Counter
 import pyspark as ps
+from pyspark.sql.functions import col
 
 
 def get_restaurants(zipcodes_filename):
@@ -36,6 +37,13 @@ def get_restaurants(zipcodes_filename):
                 data = yelp_api.search_restaurants(
                     location=zipcode, radius=0, sort_by='distance',
                     limit=limit, page=page)
+                if (data.status_code == 400 and
+                        data.json()['error']['code'] == 'LOCATION_NOT_FOUND'):
+                    # Zipcode is invalid. Skip.
+                    print('Yelp says that zipcode {} is invalid. Skipping.'
+                        .format(zipcode))
+                    break
+
                 page_restaurants = (data.json()['businesses'])
                 num_page_restaurants = len(page_restaurants)
                 restaurants += page_restaurants
@@ -102,6 +110,22 @@ def convert_to_parquet(spark, restaurants_filename, restaurants_parquet_path):
     print('raw count        : {0}'.format(restaurants_df.count()))
     print('after dedup count: {0}'.format(restaurants_dedup_df.count()))
 
+    # remove restaurants already saved if running "by state" version
+    if restaurants_parquet_path[-9:] == '_by_state':
+        saved_restaurant_ids = {
+            row['id']
+            for row in (
+                spark.read.parquet('../data/restaurants')
+                .select('id')
+                .toLocalIterator()
+            )
+        }
+
+        restaurants_dedup_df = (
+            restaurants_dedup_df
+            .filter(restaurants_dedup_df['id'].isin(saved_restaurant_ids) == False)
+        )
+
     restaurants_dedup_df.write.parquet(
         path=restaurants_parquet_path,
         mode='overwrite',
@@ -124,7 +148,8 @@ def main():
     '''
     # Add suffix for data downloaded by state instead of the original method
     # which was by city (Seattle and San Francisco)
-    suffix = '_by_state'
+    # suffix = '_by_state'
+    suffix = ''
     zipcodes_filename = '../data/zipcodes{}.json'.format(suffix)
     restaurants_filename = '../data/restaurants{}.json'.format(suffix)
     restaurants_parquet_path = '../data/restaurants{}'.format(suffix)
