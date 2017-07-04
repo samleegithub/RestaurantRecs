@@ -1,8 +1,11 @@
 dump/
 data/academic/
 data/restaurants/
-data/reviews/
+data/ratings/
 data/restaurants.json
+data/ratings.json
+data/product_labels.txt
+data/user_labels.txt
 
 .DS_Store
 .ipynb_checkpoints/
