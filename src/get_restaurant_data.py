@@ -43,6 +43,8 @@ def get_restaurants(zipcodes_filename):
                 # Count number of zip codes returned
                 zips = [
                     restaurant['location']['zip_code']
+                    if restaurant['location']['zip_code'] is not None
+                    else 'N/A'
                     for restaurant in page_restaurants
                 ]
                 zip_counts = Counter(zips)
@@ -80,7 +82,7 @@ def save_restaurants(restaurants, restaurants_filename):
             f.write(json.dumps(restaurant) + '\n')
 
 
-def convert_to_parquet(spark, restaurants_filename):
+def convert_to_parquet(spark, restaurants_filename, restaurants_parquet_path):
     '''
     Convert json restaurant data file to compressed parquet files.
 
@@ -101,7 +103,7 @@ def convert_to_parquet(spark, restaurants_filename):
     print('after dedup count: {0}'.format(restaurants_dedup_df.count()))
 
     restaurants_dedup_df.write.parquet(
-        path='../data/restaurants',
+        path=restaurants_parquet_path,
         mode='overwrite',
         compression='gzip'
     )
@@ -120,6 +122,17 @@ def main():
     =======
     None
     '''
+    # Add suffix for data downloaded by state instead of the original method
+    # which was by city (Seattle and San Francisco)
+    suffix = '_by_state'
+    zipcodes_filename = '../data/zipcodes{}.json'.format(suffix)
+    restaurants_filename = '../data/restaurants{}.json'.format(suffix)
+    restaurants_parquet_path = '../data/restaurants{}'.format(suffix)
+
+    print(zipcodes_filename)
+    print(restaurants_filename)
+    print(restaurants_parquet_path)
+
     spark = (
         ps.sql.SparkSession.builder
         # .master("local[8]")
@@ -127,11 +140,9 @@ def main():
         .getOrCreate()
     )
 
-    zipcodes_filename = '../data/zipcodes.json'
     restaurants = get_restaurants(zipcodes_filename)
-    restaurants_filename = '../data/restaurants.json'
     save_restaurants(restaurants, restaurants_filename)
-    convert_to_parquet(spark, restaurants_filename)
+    convert_to_parquet(spark, restaurants_filename, restaurants_parquet_path)
 
 
 if __name__ == '__main__':
