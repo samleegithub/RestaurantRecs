@@ -204,6 +204,8 @@ def main():
     # raw_html_data = load_html_from_db()
     #
     # print('Parsing html into ratings...')
+    # # TODO: Implement parallelized version. Currently takes over 7 hours on
+    # # 86k+ html pages.
     # ratings = parse_html(raw_html_data)
     #
     # print('Saving to json file...')
