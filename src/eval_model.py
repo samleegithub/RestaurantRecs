@@ -1,10 +1,14 @@
 from resto_reco import RestaurantRecommender
 import pyspark as ps
-import datetime
+import time
+from pyspark.ml.evaluation import RegressionEvaluator
+from pyspark.ml import Pipeline
+from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
+from pyspark.ml.recommendation import ALS
 
 spark = (
     ps.sql.SparkSession.builder
-    .master("local[8]")
+    .master("local[4]")
     .appName("eval_model")
     .getOrCreate()
 )
@@ -38,17 +42,64 @@ def main():
     print('Num test ratings: {}'.format(test_df.count()))
 
 
-    print('{}: Starting fit...'.format(datetime.datetime.now()))
     model = RestaurantRecommender()
+    model_test = ALS(
+        userCol='user_id',
+        itemCol='product_id',
+        ratingCol='rating',
+        nonnegative=True,
+        regParam=0.1
+    )
+
+    evaluator = RegressionEvaluator(
+        metricName="rmse", labelCol="rating", predictionCol="prediction")
+
+    start_time = time.monotonic()
+    step_start_time = time.monotonic()
+
     model.fit(train_df)
-    print('{}: Fit done.'.format(datetime.datetime.now()))
 
+    print('Fit done in {} seconds.'.format(time.monotonic() - step_start_time))
+    
+    step_start_time = time.monotonic()
     predictions_df = model.transform(test_df)
-
-    print(predictions_df.printSchema())
+    # print(predictions_df.printSchema())
 
     for row in predictions_df.head(10):
         print(row)
+        
+    print('Predictions done in {} seconds.'.format(time.monotonic() - step_start_time))
+    print('All done in {} seconds.'.format(time.monotonic() - start_time))
+
+    rmse = evaluator.evaluate(predictions_df)
+    print("Root-mean-square error = {}".format(rmse))
+
+    exit()
+
+    paramGrid = (
+        ParamGridBuilder()
+        .addGrid(model_test.rank, [10, 15])
+        .build()
+    )
+
+    crossval = CrossValidator(
+        estimator=model_test,
+        estimatorParamMaps=paramGrid,
+        evaluator=evaluator,
+        numFolds=2
+    )
+
+    print(crossval.getEstimatorParamMaps())
+
+    # Run cross-validation, and choose the best set of parameters.
+    print('{}: Starting crossval...'.format(datetime.datetime.now()))
+    cvModel = crossval.fit(train_df)
+    print('{}: Crossval done...'.format(datetime.datetime.now()))
+
+    print(cvModel.avgMetrics)
+
+    bestModel = cvModel.bestModel
+    print(bestModel.explainParams())
 
 
 if __name__ == '__main__':
