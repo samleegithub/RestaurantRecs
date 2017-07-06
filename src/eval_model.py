@@ -1,4 +1,4 @@
-from resto_reco import RestaurantRecommender
+from recommender import Recommender
 import pyspark as ps
 import time
 from pyspark.ml.evaluation import RegressionEvaluator
@@ -8,7 +8,7 @@ from pyspark.ml.recommendation import ALS
 
 spark = (
     ps.sql.SparkSession.builder
-    .master("local[4]")
+    .master("local[7]")
     .appName("eval_model")
     .getOrCreate()
 )
@@ -42,8 +42,7 @@ def main():
     print('Num test ratings: {}'.format(test_df.count()))
 
 
-    model = RestaurantRecommender()
-    model_test = ALS(
+    model = Recommender(
         userCol='user_id',
         itemCol='product_id',
         ratingCol='rating',
@@ -51,56 +50,58 @@ def main():
         regParam=0.1
     )
 
+
     evaluator = RegressionEvaluator(
         metricName="rmse", labelCol="rating", predictionCol="prediction")
 
-    start_time = time.monotonic()
-    step_start_time = time.monotonic()
+    # start_time = time.monotonic()
+    # step_start_time = time.monotonic()
 
-    model.fit(train_df)
+    # model.fit(train_df)
 
-    print('Fit done in {} seconds.'.format(time.monotonic() - step_start_time))
+    # print('Fit done in {} seconds.'.format(time.monotonic() - step_start_time))
     
-    step_start_time = time.monotonic()
-    predictions_df = model.transform(test_df)
-    # print(predictions_df.printSchema())
+    # step_start_time = time.monotonic()
+    # predictions_df = model.transform(test_df)
+    # # print(predictions_df.printSchema())
 
-    for row in predictions_df.head(10):
-        print(row)
-        
-    print('Predictions done in {} seconds.'.format(time.monotonic() - step_start_time))
-    print('All done in {} seconds.'.format(time.monotonic() - start_time))
+    # for row in predictions_df.head(10):
+    #     print(row)
 
-    rmse = evaluator.evaluate(predictions_df)
-    print("Root-mean-square error = {}".format(rmse))
+    # print('Predictions done in {} seconds.'.format(time.monotonic() - step_start_time))
+    # print('All done in {} seconds.'.format(time.monotonic() - start_time))
 
-    exit()
+    # rmse = evaluator.evaluate(predictions_df)
+    # print("Root-mean-square error = {}".format(rmse))
+
+    # exit()
 
     paramGrid = (
         ParamGridBuilder()
-        .addGrid(model_test.rank, [10, 15])
+        .addGrid(model.rank, [5, 10])
+        .addGrid(model.regParam, [0.1])
+        .addGrid(model.maxIter, [10])
+        .addGrid(model.nonnegative, [True, False])
         .build()
     )
 
-    crossval = CrossValidator(
-        estimator=model_test,
+    cv = CrossValidator(
+        estimator=model,
         estimatorParamMaps=paramGrid,
         evaluator=evaluator,
-        numFolds=2
+        numFolds=3
     )
 
-    print(crossval.getEstimatorParamMaps())
-
     # Run cross-validation, and choose the best set of parameters.
-    print('{}: Starting crossval...'.format(datetime.datetime.now()))
-    cvModel = crossval.fit(train_df)
-    print('{}: Crossval done...'.format(datetime.datetime.now()))
+    step_start_time = time.monotonic()
+    cvModel = cv.fit(train_df)
+    print('Crossval done in {} seconds.'.format(time.monotonic() - step_start_time))
 
+    print(cv.getEstimatorParamMaps())
     print(cvModel.avgMetrics)
 
-    bestModel = cvModel.bestModel
-    print(bestModel.explainParams())
-
+    rmse = evaluator.evaluate(cvModel.transform(test_df))
+    print("Test RMSE: {}".format(rmse))
 
 if __name__ == '__main__':
     main()
