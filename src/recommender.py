@@ -275,53 +275,71 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
         Parameters
         ==========
-        ratings_df (pyspark.sql.DataFrame)
-            Data used to train ALS model. Columns are 'user_id',
-            'product_id', and 'rating'. Values of user_id and product_id
-            must be numeric. Values of rating range from 1 to 5.
+        ratings_df      (pyspark.sql.DataFrame) Data used to train recommender
+                        model. Columns are 'user', 'item', and 'rating'. Values
+                        of user and item must be numeric. Values of rating
+                        range from 1 to 5.
 
         Returns
         =======
         self
         '''
-        # print('Starting average calc...')
-
-        # start_time = time.monotonic()
-        # step_start_time = time.monotonic()
-
-        average_rating = (
+        avg_rating = (
             ratings_df
             .groupBy()
-            .avg('rating')
-            .withColumnRenamed('avg(rating)', 'avg_rating')
+            .avg(self.getRatingCol())
+            .withColumnRenamed('avg({})'.format(self.getRatingCol()),
+                               'avg_rating')
         )
 
-        # print('Average calc done in {} seconds'
-        #     .format(time.monotonic() - step_start_time))
-
-        # step_start_time = time.monotonic()
-
-        average_rating_user = (
+        avg_user_bias = (
             ratings_df
-            .groupBy('user_id')
-            .avg('rating')
-            .withColumnRenamed('avg(rating)', 'avg_user_rating_diff')
+            .groupBy(self.getUserCol())
+            .avg(self.getRatingCol())
+            .withColumnRenamed('avg({})'.format(self.getRatingCol()),
+                               'avg_user_rating')
+            .crossJoin(avg_rating)
+            .withColumn('avg_user_bias',
+                        F.col('avg_user_rating') - F.col('avg_rating'))
+            .select(
+                self.getUserCol(),
+                'avg_user_bias'
+            )
         )
 
-        # print('User average calc done in {} seconds.'
-        #     .format(time.monotonic() - step_start_time))
-
-        # step_start_time = time.monotonic()
-
-        average_rating_product = (
+        avg_item_bias = (
             ratings_df
-            .groupBy('product_id')
-            .avg('rating')
-            .withColumnRenamed('avg(rating)', 'avg_product_rating_diff')
+            .groupBy(self.getItemCol())
+            .avg(self.getRatingCol())
+            .withColumnRenamed('avg({})'.format(self.getRatingCol()),
+                               'avg_item_rating')
+            .crossJoin(avg_rating)
+            .withColumn('avg_item_bias',
+                        F.col('avg_item_rating') - F.col('avg_rating'))
+            .select(
+                self.getItemCol(),
+                'avg_item_bias'
+            )
         )
 
-        # print('Restaurant average calc done in {} seconds.'
-        #     .format(time.monotonic() - step_start_time))
+        residual_df = (
+            ratings_df
+            .crossJoin(avg_rating)
+            .join(avg_user_bias, on=self.getUserCol())
+            .join(avg_item_bias, on=self.getItemCol())
+            .withColumn(
+                'residual',
+                F.col(self.getRatingCol())
+                - F.col('avg_rating')
+                - F.col('avg_user_bias')
+                - F.col('avg_item_bias')
+            )
+            .select(
+                self.getUserCol(),
+                self.getItemCol(),
+                'residual'
+            )
+        )
 
         als_model = ALS(
             rank=self.getRank(),
@@ -333,33 +351,29 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
             alpha=self.getAlpha(),
             userCol=self.getUserCol(),
             itemCol=self.getItemCol(),
-            ratingCol=self.getRatingCol(),
+            ratingCol='residual',
             nonnegative=self.getNonnegative(),
             checkpointInterval=self.getCheckpointInterval(),
             intermediateStorageLevel=self.getIntermediateStorageLevel(),
             finalStorageLevel=self.getFinalStorageLevel()
         )
 
-        recommender = als_model.fit(ratings_df)
-
-        # print('Model fit done in {} seconds.'
-        #     .format(time.monotonic() - start_time))
+        recommender = als_model.fit(residual_df)
 
 
         return (
-            RecommenderModel(recommender, average_rating, average_rating_user,
-                average_rating_product)
+            RecommenderModel(recommender, avg_rating, avg_user_bias,
+                avg_item_bias)
         )
 
 
 class RecommenderModel(Model):
-    def __init__(self, recommender, average_rating, average_rating_user,
-                average_rating_product):
+    def __init__(self, recommender, avg_rating, avg_user_bias, avg_item_bias):
         super(RecommenderModel, self).__init__()
         self.recommender = recommender
-        self.average_rating = average_rating
-        self.average_rating_user = average_rating_user
-        self.average_rating_product = average_rating_product
+        self.avg_rating = avg_rating
+        self.avg_user_bias = avg_user_bias
+        self.avg_item_bias = avg_item_bias
 
 
     @property
@@ -411,62 +425,41 @@ class RecommenderModel(Model):
 
         Parameters
         ==========
-        requests_df (pyspark.sql.DataFrame)
-            Data used to request predictions of ratings. Columns are 'user_id'
-            and 'product_id'. Values of 'user_id' and 'product_id' must be
-            numeric.
+        requests_df         (pyspark.sql.DataFrame) Data used to request 
+                            predictions of ratings. Columns are 'user' and
+                            'item'. Values of 'user' and 'item' must be
+                            numeric.
 
         Returns
         =======
-        predictions (pyspark.sql.DataFrame)
-            Predictions with 'user_id', 'product_id' and 'prediction', the
-            predicted value for rating. Rating will be a floating point number.
+        predictions_df      (pyspark.sql.DataFrame) Predictions with 'user',
+                            'item' and 'prediction'. Prediction will be a 
+                            floating point number.
 
         '''
-
-        # start_time = time.monotonic()
-        # step_start_time = time.monotonic()
-
-        predictions_df = self.recommender.transform(requests_df)
-
-        # print('ALS model transform done in {} seconds'
-        #     .format(time.monotonic() - step_start_time))
-
-        # step_start_time = time.monotonic()
-
-        predictions_df2 = (
-            predictions_df
-            .join(self.average_rating_user, on='user_id')
-            .fillna({'avg_user_rating_diff': 0.0})
-            .join(self.average_rating_product, on='product_id')
-            .fillna({'avg_product_rating_diff': 0.0})
-            .crossJoin(self.average_rating)
+        return (
+            self.recommender.transform(requests_df)
+            .crossJoin(self.avg_rating)
+            .join(self.avg_user_bias, on='user')
+            .join(self.avg_item_bias, on='item')
+            .fillna({
+                'prediction': 0.0,
+                'avg_user_bias': 0.0,
+                'avg_item_bias': 0.0
+            })
             .withColumn(
-                'fillblanks',
-                F.col('avg_rating') + F.col('avg_user_rating_diff') + F.col('avg_product_rating_diff')
+                'prediction',
+                F.col('prediction')
+                + F.col('avg_rating')
+                + F.col('avg_user_bias')
+                + F.col('avg_item_bias')
             )
-        )
-
-        # print('fillblanks calc done in {} seconds'
-        #     .format(time.monotonic() - step_start_time))
-
-        # step_start_time = time.monotonic()
-
-        predictions_df3 = (
-            predictions_df2
             .select(
-                'user_id',
-                'product_id',
+                'user',
+                'item',
                 'rating',
-                F.nanvl('prediction', 'fillblanks').alias('prediction')
+                'prediction'
             )
         )
 
-        # print('Nan backfill done in {} seconds'
-        #     .format(time.monotonic() - step_start_time))
 
-        # print('Model transform done in {} seconds.'
-        #     .format(time.monotonic() - start_time))
-
-
-        return predictions_df3

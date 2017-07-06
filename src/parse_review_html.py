@@ -171,8 +171,8 @@ def convert_to_parquet(spark, ratings_filename):
             )
         )
         .select(
-            col('user_idx').cast(IntegerType()).alias('user_id'),
-            col('product_idx').cast(IntegerType()).alias('product_id'),
+            col('user_idx').cast(IntegerType()).alias('user'),
+            col('product_idx').cast(IntegerType()).alias('item'),
             col('rating').cast(ByteType()).alias('rating')
         )
     )
