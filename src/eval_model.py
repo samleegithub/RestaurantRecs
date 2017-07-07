@@ -111,13 +111,13 @@ def eval_model(train_df, test_df):
 def main():
     spark = (
         ps.sql.SparkSession.builder
-        .master("local[8]")
+        # .master("local[8]")
         .appName("eval_model")
         .getOrCreate()
     )
 
     # Load restaurant reviews
-    reviews_df = spark.read.parquet('../data/ratings')
+    reviews_df = spark.read.parquet('s3://sam.lee/restaurantrecs/data/ratings')
 
     # Randomly split data into train and test datasets
     train_df, test_df = reviews_df.randomSplit(weights=[0.75, 0.25])
