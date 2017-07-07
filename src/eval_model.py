@@ -6,6 +6,11 @@ from pyspark.ml import Pipeline
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 from pyspark.ml.recommendation import ALS
 
+
+# TODO: Implement a NDCG scoring method
+# https://en.wikipedia.org/wiki/Discounted_cumulative_gain
+
+
 def compute_score(predictions_df):
     """Look at 5% of most highly predicted restaurants for each user.
     Return the average actual rating of those restaurants.
@@ -21,6 +26,7 @@ def compute_score(predictions_df):
     # return the mean of the actual score on those
     return predictions_df['stars'][top_5].mean()
 
+
 def cv_grid_search(train_df, test_df):
     estimator = Recommender(
         userCol='user',
@@ -35,7 +41,7 @@ def cv_grid_search(train_df, test_df):
     paramGrid = (
         ParamGridBuilder()
         # .addGrid(estimator.rank, [20, 50, 100])
-        .addGrid(estimator.regParam, [1, 1.5, 2])
+        .addGrid(estimator.regParam, [.1, .25, .5, .75, 1])
         # .addGrid(estimator.maxIter, [10])
         # .addGrid(estimator.nonnegative, [True, False])
         .build()
