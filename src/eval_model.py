@@ -1,10 +1,13 @@
 from recommender import Recommender
+import numpy as np
 import pyspark as ps
 import time
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml import Pipeline
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 from pyspark.ml.recommendation import ALS
+import matplotlib.pyplot as plt
+plt.style.use('ggplot')
 
 
 # TODO: Implement a NDCG scoring method
@@ -69,13 +72,169 @@ def cv_grid_search(train_df, test_df):
     print("Test RMSE: {}".format(rmse))
 
 
+def plot_scores(train_df):
+    train_df, val_df = train_df.randomSplit(weights=[0.75, 0.25])
+    print('[plot_scores] Num train ratings: {}'.format(train_df.count()))
+    print('[plot_scores] Num validation ratings: {}'.format(val_df.count()))
+
+    evaluator = RegressionEvaluator(
+        metricName="rmse", labelCol="rating", predictionCol="prediction")
+
+    # First get baseline scores with ALS turned off
+    estimator = Recommender(
+        useALS=False,
+        userCol='user',
+        itemCol='item',
+        ratingCol='rating',
+        rank=10,
+        regParam=0.1,
+        maxIter=10,
+        nonnegative=False
+    )
+
+    model = estimator.fit(train_df)
+    baseline_score_train = evaluator.evaluate(model.transform(train_df))
+    baseline_score_val = evaluator.evaluate(model.transform(val_df))
+
+    print('Train Baseline RSME score: {}'.format(baseline_score_train))
+    print('Validation Baseline RSME score: {}'.format(baseline_score_val))
+    
+    ranks = [1, 2, 3, 4, 5, 7, 10, 25, 50, 100]
+    rank_scores_train = []
+    rank_scores_val =[]
+
+    start_time = time.monotonic()
+
+    for rank in ranks:
+        print('Calculating score for rank {}'.format(rank))
+
+        step_start_time = time.monotonic()
+
+        estimator = Recommender(
+            useALS=True,
+            userCol='user',
+            itemCol='item',
+            ratingCol='rating',
+            rank=rank,
+            regParam=0.5,
+            maxIter=10,
+            nonnegative=False
+        )
+
+        model = estimator.fit(train_df)
+        rank_scores_train.append(evaluator.evaluate(model.transform(train_df)))
+        rank_scores_val.append(evaluator.evaluate(model.transform(val_df)))
+        print('Done scoring for rank {} in {} seconds'
+            .format(rank, time.monotonic() - step_start_time))
+
+    print('Done in {} seconds'
+        .format(time.monotonic() - start_time))
+
+    rank_scores_train = np.array(rank_scores_train)
+    rank_scores_val = np.array(rank_scores_val)
+
+
+    print('Ranks:')
+    print(ranks)
+    print('Train RMSE Scores:')
+    print(rank_scores_train)
+    print('Validation RMSE Scores:')
+    print(rank_scores_val)
+
+
+    regParams = [0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 1]
+    regParam_scores_train = []
+    regParam_scores_val =[]
+
+    start_time = time.monotonic()
+
+    for regParam in regParams:
+        print('Calculating score for regParam {}'.format(regParam))
+
+        step_start_time = time.monotonic()
+
+        estimator = Recommender(
+            userCol='user',
+            itemCol='item',
+            ratingCol='rating',
+            rank=10,
+            regParam=regParam,
+            maxIter=10,
+            nonnegative=False
+        )
+
+        model = estimator.fit(train_df)
+        regParam_scores_train.append(evaluator.evaluate(model.transform(train_df)))
+        regParam_scores_val.append(evaluator.evaluate(model.transform(val_df)))
+        print('Done scoring for regParam {} in {} seconds'
+            .format(regParam, time.monotonic() - step_start_time))
+
+    print('Done in {} seconds'
+        .format(time.monotonic() - start_time))
+
+
+    regParam_scores_train = np.array(regParam_scores_train)
+    regParam_scores_val = np.array(regParam_scores_val)
+
+    print('RegParams:')
+    print(regParams)
+    print('Train RMSE Scores:')
+    print(regParam_scores_train)
+    print('Validation RMSE Scores:')
+    print(regParam_scores_val)
+
+
+    fig, axes = plt.subplots(2, 2, figsize=(15, 9))
+    flat_axes = axes.flatten()
+
+    flat_axes[0].plot(ranks, rank_scores_train, label='Train')
+    flat_axes[0].plot(ranks, rank_scores_val, label='Validation')
+    flat_axes[0].axhline(y=baseline_score_train, label='Train Baseline', 
+        color='green')
+    flat_axes[0].axhline(y=baseline_score_val, label='Validation Baseline', 
+        color='orange')
+    flat_axes[0].set_title('RMSE vs. Rank (regParam=0.5)')
+    flat_axes[0].set_xlabel('Rank')
+    flat_axes[0].set_ylabel('RMSE')
+    flat_axes[0].legend()
+
+    flat_axes[1].plot(regParams, regParam_scores_train, label='Train')
+    flat_axes[1].plot(regParams, regParam_scores_val, label='Validation')
+    flat_axes[1].axhline(y=baseline_score_train, label='Train Baseline', 
+        color='green')
+    flat_axes[1].axhline(y=baseline_score_val, label='Validation Baseline', 
+        color='orange')
+    flat_axes[1].set_title('RMSE vs. regParam (Rank=10)')
+    flat_axes[1].set_xlabel('regParam')
+    flat_axes[1].set_ylabel('RMSE')
+    flat_axes[1].legend()
+
+    flat_axes[2].plot(ranks, rank_scores_train - baseline_score_train, label='Train')
+    flat_axes[2].plot(ranks, rank_scores_val - baseline_score_val, label='Validation')
+    flat_axes[2].set_title('RMSE - Baseline vs. Rank (regParam=0.5)')
+    flat_axes[2].set_xlabel('Rank')
+    flat_axes[2].set_ylabel('RMSE')
+    flat_axes[2].legend()
+
+    flat_axes[3].plot(regParams, regParam_scores_train - baseline_score_train, label='Train')
+    flat_axes[3].plot(regParams, regParam_scores_val - baseline_score_val, label='Validation')
+    flat_axes[3].set_title('RMSE - Baseline vs. regParam (Rank=10)')
+    flat_axes[3].set_xlabel('regParam')
+    flat_axes[3].set_ylabel('RMSE')
+    flat_axes[3].legend()
+
+
+    plt.tight_layout()
+    plt.show()
+
+
 def eval_model(train_df, test_df):
     estimator = Recommender(
         userCol='user',
         itemCol='item',
         ratingCol='rating',
-        rank=100,
-        regParam=1,
+        rank=10,
+        regParam=0.5,
         maxIter=10,
         nonnegative=False
     )
@@ -96,7 +255,7 @@ def eval_model(train_df, test_df):
     test_predictions_df = model.transform(test_df)
     # print(predictions_df.printSchema())
 
-    for row in predictions_df.head(10):
+    for row in test_predictions_df.head(30):
         print(row)
 
     print('Predictions done in {} seconds.'.format(time.monotonic() - step_start_time))
@@ -117,19 +276,23 @@ def main():
     )
 
     # Load restaurant reviews
-    reviews_df = spark.read.parquet('../data/ratings')
+    ratings_df = spark.read.parquet('../data/ratings')
 
     # Randomly split data into train and test datasets
-    train_df, test_df = reviews_df.randomSplit(weights=[0.75, 0.25])
+    train_df, test_df = ratings_df.randomSplit(weights=[0.75, 0.25])
 
-    print(reviews_df.printSchema())
-    print('Num total ratings: {}'.format(reviews_df.count()))
+    print(ratings_df.printSchema())
+    print('Num total ratings: {}'.format(ratings_df.count()))
     print('Num train ratings: {}'.format(train_df.count()))
     print('Num test ratings: {}'.format(test_df.count()))
 
-    cv_grid_search(train_df, test_df)
-
+    # cv_grid_search(train_df, test_df)
+    
+    plot_scores(train_df)
+    
     # eval_model(train_df, test_df)
+
+
 
 
 if __name__ == '__main__':
