@@ -1,0 +1,164 @@
+Restaurants count: 5664
+Ratings count: 1672665
+Num users: 510240
+Num restaurants (from ratings data): 5662
+Num users with 1 ratings: 292184
+Num users with 2 ratings: 84911
+Num users with 3 ratings: 39787
+Num users with 4 ratings: 22848
+Num users with 5 ratings: 14449
+Num users with 6 ratings: 10068
+Num users with 7 ratings: 7138
+Num users with 8 ratings: 5464
+Num users with 9 ratings: 4399
+Num users with 10 ratings: 3505
+Num users with more than 1 ratings: 218056 (should equal 218056)
+Num users with more than 2 ratings: 133145 (should equal 133145)
+Num users with more than 3 ratings: 93358 (should equal 93358)
+Num users with more than 4 ratings: 70510 (should equal 70510)
+Num users with more than 5 ratings: 56061 (should equal 56061)
+Num users with more than 6 ratings: 45993 (should equal 45993)
+Num users with more than 7 ratings: 38855 (should equal 38855)
+Num users with more than 8 ratings: 33391 (should equal 33391)
+Num users with more than 9 ratings: 28992 (should equal 28992)
+Num users with more than 10 ratings: 25487 (should equal 25487)
+Num ratings of users with more than 1 ratings: 1380481 (should equal 1380481)
+Num ratings of users with more than 2 ratings: 1210659 (should equal 1210659)
+Num ratings of users with more than 3 ratings: 1091298 (should equal 1091298)
+Num ratings of users with more than 4 ratings: 999906 (should equal 999906)
+Num ratings of users with more than 5 ratings: 927661 (should equal 927661)
+Num ratings of users with more than 6 ratings: 867253 (should equal 867253)
+Num ratings of users with more than 7 ratings: 817287 (should equal 817287)
+Num ratings of users with more than 8 ratings: 773575 (should equal 773575)
+Num ratings of users with more than 9 ratings: 733984 (should equal 733984)
+Num ratings of users with more than 10 ratings: 698934 (should equal 698934)
+Num items with 1 ratings: 133
+Num items with 2 ratings: 87
+Num items with 3 ratings: 74
+Num items with 4 ratings: 47
+Num items with 5 ratings: 50
+Num items with 6 ratings: 38
+Num items with 7 ratings: 44
+Num items with 8 ratings: 36
+Num items with 9 ratings: 46
+Num items with 10 ratings: 38
+Num items with more than 1 ratings: 5529 (should equal 5529)
+Num items with more than 2 ratings: 5442 (should equal 5442)
+Num items with more than 3 ratings: 5368 (should equal 5368)
+Num items with more than 4 ratings: 5321 (should equal 5321)
+Num items with more than 5 ratings: 5271 (should equal 5271)
+Num items with more than 6 ratings: 5233 (should equal 5233)
+Num items with more than 7 ratings: 5189 (should equal 5189)
+Num items with more than 8 ratings: 5153 (should equal 5153)
+Num items with more than 9 ratings: 5107 (should equal 5107)
+Num items with more than 10 ratings: 5069 (should equal 5069)
+Num ratings of items with more than 1 ratings: 1672532 (should equal 1672532)
+Num ratings of items with more than 2 ratings: 1672358 (should equal 1672358)
+Num ratings of items with more than 3 ratings: 1672136 (should equal 1672136)
+Num ratings of items with more than 4 ratings: 1671948 (should equal 1671948)
+Num ratings of items with more than 5 ratings: 1671698 (should equal 1671698)
+Num ratings of items with more than 6 ratings: 1671470 (should equal 1671470)
+Num ratings of items with more than 7 ratings: 1671162 (should equal 1671162)
+Num ratings of items with more than 8 ratings: 1670874 (should equal 1670874)
+Num ratings of items with more than 9 ratings: 1670460 (should equal 1670460)
+Num ratings of items with more than 10 ratings: 1670080 (should equal 1670080)
+num ratings of users > 1 ratings and items > 1 ratings: 1380378
+num ratings of users > 1 ratings and items > 2 ratings: 1380247
+num ratings of users > 1 ratings and items > 3 ratings: 1380080
+num ratings of users > 1 ratings and items > 4 ratings: 1379949
+num ratings of users > 1 ratings and items > 5 ratings: 1379768
+num ratings of users > 1 ratings and items > 6 ratings: 1379590
+num ratings of users > 1 ratings and items > 7 ratings: 1379374
+num ratings of users > 1 ratings and items > 8 ratings: 1379165
+num ratings of users > 1 ratings and items > 9 ratings: 1378843
+num ratings of users > 1 ratings and items > 10 ratings: 1378547
+num ratings of users > 2 ratings and items > 1 ratings: 1210569
+num ratings of users > 2 ratings and items > 2 ratings: 1210466
+num ratings of users > 2 ratings and items > 3 ratings: 1210319
+num ratings of users > 2 ratings and items > 4 ratings: 1210202
+num ratings of users > 2 ratings and items > 5 ratings: 1210048
+num ratings of users > 2 ratings and items > 6 ratings: 1209896
+num ratings of users > 2 ratings and items > 7 ratings: 1209710
+num ratings of users > 2 ratings and items > 8 ratings: 1209532
+num ratings of users > 2 ratings and items > 9 ratings: 1209250
+num ratings of users > 2 ratings and items > 10 ratings: 1208994
+num ratings of users > 3 ratings and items > 1 ratings: 1091216
+num ratings of users > 3 ratings and items > 2 ratings: 1091126
+num ratings of users > 3 ratings and items > 3 ratings: 1090994
+num ratings of users > 3 ratings and items > 4 ratings: 1090887
+num ratings of users > 3 ratings and items > 5 ratings: 1090746
+num ratings of users > 3 ratings and items > 6 ratings: 1090609
+num ratings of users > 3 ratings and items > 7 ratings: 1090436
+num ratings of users > 3 ratings and items > 8 ratings: 1090287
+num ratings of users > 3 ratings and items > 9 ratings: 1090031
+num ratings of users > 3 ratings and items > 10 ratings: 1089814
+num ratings of users > 4 ratings and items > 1 ratings: 999829
+num ratings of users > 4 ratings and items > 2 ratings: 999748
+num ratings of users > 4 ratings and items > 3 ratings: 999630
+num ratings of users > 4 ratings and items > 4 ratings: 999536
+num ratings of users > 4 ratings and items > 5 ratings: 999413
+num ratings of users > 4 ratings and items > 6 ratings: 999283
+num ratings of users > 4 ratings and items > 7 ratings: 999129
+num ratings of users > 4 ratings and items > 8 ratings: 998997
+num ratings of users > 4 ratings and items > 9 ratings: 998770
+num ratings of users > 4 ratings and items > 10 ratings: 998579
+num ratings of users > 5 ratings and items > 1 ratings: 927587
+num ratings of users > 5 ratings and items > 2 ratings: 927509
+num ratings of users > 5 ratings and items > 3 ratings: 927399
+num ratings of users > 5 ratings and items > 4 ratings: 927317
+num ratings of users > 5 ratings and items > 5 ratings: 927205
+num ratings of users > 5 ratings and items > 6 ratings: 927083
+num ratings of users > 5 ratings and items > 7 ratings: 926941
+num ratings of users > 5 ratings and items > 8 ratings: 926818
+num ratings of users > 5 ratings and items > 9 ratings: 926609
+num ratings of users > 5 ratings and items > 10 ratings: 926442
+num ratings of users > 6 ratings and items > 1 ratings: 867183
+num ratings of users > 6 ratings and items > 2 ratings: 867108
+num ratings of users > 6 ratings and items > 3 ratings: 867003
+num ratings of users > 6 ratings and items > 4 ratings: 866929
+num ratings of users > 6 ratings and items > 5 ratings: 866826
+num ratings of users > 6 ratings and items > 6 ratings: 866719
+num ratings of users > 6 ratings and items > 7 ratings: 866584
+num ratings of users > 6 ratings and items > 8 ratings: 866472
+num ratings of users > 6 ratings and items > 9 ratings: 866283
+num ratings of users > 6 ratings and items > 10 ratings: 866126
+num ratings of users > 7 ratings and items > 1 ratings: 817218
+num ratings of users > 7 ratings and items > 2 ratings: 817145
+num ratings of users > 7 ratings and items > 3 ratings: 817046
+num ratings of users > 7 ratings and items > 4 ratings: 816979
+num ratings of users > 7 ratings and items > 5 ratings: 816885
+num ratings of users > 7 ratings and items > 6 ratings: 816781
+num ratings of users > 7 ratings and items > 7 ratings: 816650
+num ratings of users > 7 ratings and items > 8 ratings: 816549
+num ratings of users > 7 ratings and items > 9 ratings: 816367
+num ratings of users > 7 ratings and items > 10 ratings: 816218
+num ratings of users > 8 ratings and items > 1 ratings: 773510
+num ratings of users > 8 ratings and items > 2 ratings: 773440
+num ratings of users > 8 ratings and items > 3 ratings: 773345
+num ratings of users > 8 ratings and items > 4 ratings: 773284
+num ratings of users > 8 ratings and items > 5 ratings: 773194
+num ratings of users > 8 ratings and items > 6 ratings: 773096
+num ratings of users > 8 ratings and items > 7 ratings: 772970
+num ratings of users > 8 ratings and items > 8 ratings: 772873
+num ratings of users > 8 ratings and items > 9 ratings: 772700
+num ratings of users > 8 ratings and items > 10 ratings: 772564
+num ratings of users > 9 ratings and items > 1 ratings: 733923
+num ratings of users > 9 ratings and items > 2 ratings: 733856
+num ratings of users > 9 ratings and items > 3 ratings: 733765
+num ratings of users > 9 ratings and items > 4 ratings: 733709
+num ratings of users > 9 ratings and items > 5 ratings: 733622
+num ratings of users > 9 ratings and items > 6 ratings: 733532
+num ratings of users > 9 ratings and items > 7 ratings: 733416
+num ratings of users > 9 ratings and items > 8 ratings: 733323
+num ratings of users > 9 ratings and items > 9 ratings: 733161
+num ratings of users > 9 ratings and items > 10 ratings: 733030
+num ratings of users > 10 ratings and items > 1 ratings: 698876
+num ratings of users > 10 ratings and items > 2 ratings: 698811
+num ratings of users > 10 ratings and items > 3 ratings: 698721
+num ratings of users > 10 ratings and items > 4 ratings: 698666
+num ratings of users > 10 ratings and items > 5 ratings: 698581
+num ratings of users > 10 ratings and items > 6 ratings: 698497
+num ratings of users > 10 ratings and items > 7 ratings: 698386
+num ratings of users > 10 ratings and items > 8 ratings: 698297
+num ratings of users > 10 ratings and items > 9 ratings: 698138
+num ratings of users > 10 ratings and items > 10 ratings: 698013

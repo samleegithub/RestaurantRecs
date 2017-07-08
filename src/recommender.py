@@ -340,7 +340,8 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
             )
         )
 
-        if self.getUseALS:
+        if self.getUseALS():
+            # print('Fit using ALS!')
             residual_df = (
                 ratings_df
                 .crossJoin(avg_rating)
@@ -379,11 +380,12 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
             recommender = als_model.fit(residual_df)
         else:
+            # print('Fit without ALS!')
             recommender = None
 
 
         return (
-            RecommenderModel(self.getUseALS, recommender, avg_rating, avg_user_bias,
+            RecommenderModel(self.getUseALS(), recommender, avg_rating, avg_user_bias,
                 avg_item_bias)
         )
 

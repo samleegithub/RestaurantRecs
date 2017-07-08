@@ -3,6 +3,7 @@ data/academic/
 data/restaurants/
 data/restaurants_by_state/
 data/ratings/
+data/ratings_*/
 data/restaurants.json
 data/restaurants_by_state.json
 data/ratings.json
