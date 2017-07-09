@@ -39,8 +39,8 @@ def cv_grid_search(train_df, test_df):
         userCol='user',
         itemCol='item',
         ratingCol='rating',
-        rank=50,
-        regParam=0.1,
+        rank=100,
+        regParam=0.2,
         maxIter=10,
         nonnegative=True
     )
@@ -49,8 +49,8 @@ def cv_grid_search(train_df, test_df):
         ParamGridBuilder()
         # .addGrid(estimator.lambda_1, [4, 5, 6])
         # .addGrid(estimator.lambda_2, [6, 7, 8, 9])
-        .addGrid(estimator.rank, [40, 50, 75, 100])
-        .addGrid(estimator.regParam, [0.15, 0.2, 0.25])
+        .addGrid(estimator.rank, [90, 100, 150])
+        # .addGrid(estimator.regParam, [0.15, 0.2, 0.25])
         # .addGrid(estimator.maxIter, [10])
         # .addGrid(estimator.nonnegative, [True, False])
         .build()
