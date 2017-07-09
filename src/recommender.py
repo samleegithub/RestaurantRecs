@@ -302,7 +302,7 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         =======
         self
         '''
-        avg_rating = (
+        avg_rating_df = (
             ratings_df
             .groupBy()
             .avg(self.getRatingCol())
@@ -310,33 +310,53 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
                                'avg_rating')
         )
 
-        avg_user_bias = (
+        # Regularization Parameters
+        lambda_1 = 25
+        lambda_2 = 10
+
+        item_bias_df = (
             ratings_df
-            .groupBy(self.getUserCol())
-            .avg(self.getRatingCol())
-            .withColumnRenamed('avg({})'.format(self.getRatingCol()),
-                               'avg_user_rating')
-            .crossJoin(avg_rating)
-            .withColumn('avg_user_bias',
-                        F.col('avg_user_rating') - F.col('avg_rating'))
+            .crossJoin(avg_rating_df)
+            .groupBy(self.getItemCol())
+            .agg(
+                F.sum(
+                    F.col(self.getRatingCol()) 
+                    - F.col('avg_rating')
+                ).alias('sum_diffs'),
+                F.count("*").alias('ct')
+            )
+            .withColumn(
+                'item_bias',
+                F.col('sum_diffs')
+                / (lambda_1 + F.col('ct'))
+            )
             .select(
-                self.getUserCol(),
-                'avg_user_bias'
+                self.getItemCol(),
+                'item_bias'
             )
         )
 
-        avg_item_bias = (
+        user_bias_df = (
             ratings_df
-            .groupBy(self.getItemCol())
-            .avg(self.getRatingCol())
-            .withColumnRenamed('avg({})'.format(self.getRatingCol()),
-                               'avg_item_rating')
-            .crossJoin(avg_rating)
-            .withColumn('avg_item_bias',
-                        F.col('avg_item_rating') - F.col('avg_rating'))
+            .crossJoin(avg_rating_df)
+            .join(item_bias_df, on=self.getItemCol())
+            .groupBy(self.getUserCol())
+            .agg(
+                F.sum(
+                    F.col(self.getRatingCol())
+                    - F.col('avg_rating')
+                    - F.col('item_bias')
+                ).alias('sum_diffs'),
+                F.count("*").alias('ct')
+            )            
+            .withColumn(
+                'user_bias',
+                F.col('sum_diffs')
+                / (lambda_2 + F.col('ct'))
+            )
             .select(
-                self.getItemCol(),
-                'avg_item_bias'
+                self.getUserCol(),
+                'user_bias'
             )
         )
 
@@ -344,15 +364,15 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
             # print('Fit using ALS!')
             residual_df = (
                 ratings_df
-                .crossJoin(avg_rating)
-                .join(avg_user_bias, on=self.getUserCol())
-                .join(avg_item_bias, on=self.getItemCol())
+                .crossJoin(avg_rating_df)
+                .join(user_bias_df, on=self.getUserCol())
+                .join(item_bias_df, on=self.getItemCol())
                 .withColumn(
                     'residual',
                     F.col(self.getRatingCol())
                     - F.col('avg_rating')
-                    - F.col('avg_user_bias')
-                    - F.col('avg_item_bias')
+                    - F.col('user_bias')
+                    - F.col('item_bias')
                 )
                 .select(
                     self.getUserCol(),
@@ -385,19 +405,20 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
 
         return (
-            RecommenderModel(self.getUseALS(), recommender, avg_rating, avg_user_bias,
-                avg_item_bias)
+            RecommenderModel(self.getUseALS(), recommender, avg_rating_df,
+                user_bias_df, item_bias_df)
         )
 
 
 class RecommenderModel(Model):
-    def __init__(self, useALS, recommender, avg_rating, avg_user_bias, avg_item_bias):
+    def __init__(self, useALS, recommender, avg_rating_df, user_bias_df,
+                 item_bias_df):
         super(RecommenderModel, self).__init__()
         self.useALS = useALS
         self.recommender = recommender
-        self.avg_rating = avg_rating
-        self.avg_user_bias = avg_user_bias
-        self.avg_item_bias = avg_item_bias
+        self.avg_rating_df = avg_rating_df
+        self.user_bias_df = user_bias_df
+        self.item_bias_df = item_bias_df
 
 
     @property
@@ -464,20 +485,20 @@ class RecommenderModel(Model):
         if self.useALS:
             return (
                 self.recommender.transform(requests_df)
-                .crossJoin(self.avg_rating)
-                .join(self.avg_user_bias, on='user')
-                .join(self.avg_item_bias, on='item')
+                .crossJoin(self.avg_rating_df)
+                .join(self.user_bias_df, on='user')
+                .join(self.item_bias_df, on='item')
                 .fillna({
                     'prediction': 0.0,
-                    'avg_user_bias': 0.0,
-                    'avg_item_bias': 0.0
+                    'user_bias': 0.0,
+                    'item_bias': 0.0
                 })
                 .withColumn(
                     'prediction',
                     F.col('prediction')
                     + F.col('avg_rating')
-                    + F.col('avg_user_bias')
-                    + F.col('avg_item_bias')
+                    + F.col('user_bias')
+                    + F.col('item_bias')
                 )
                 .select(
                     'user',
@@ -489,18 +510,18 @@ class RecommenderModel(Model):
         else:
             return (
                 requests_df
-                .crossJoin(self.avg_rating)
-                .join(self.avg_user_bias, on='user')
-                .join(self.avg_item_bias, on='item')
+                .crossJoin(self.avg_rating_df)
+                .join(self.user_bias_df, on='user')
+                .join(self.item_bias_df, on='item')
                 .fillna({
-                    'avg_user_bias': 0.0,
-                    'avg_item_bias': 0.0
+                    'user_bias': 0.0,
+                    'item_bias': 0.0
                 })
                 .withColumn(
                     'prediction',
                     F.col('avg_rating')
-                    + F.col('avg_user_bias')
-                    + F.col('avg_item_bias')
+                    + F.col('user_bias')
+                    + F.col('item_bias')
                 )
                 .select(
                     'user',

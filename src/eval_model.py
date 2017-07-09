@@ -35,16 +35,16 @@ def cv_grid_search(train_df, test_df):
         userCol='user',
         itemCol='item',
         ratingCol='rating',
-        rank=100,
-        regParam=1,
+        rank=50,
+        regParam=0.1,
         maxIter=10,
-        nonnegative=False
+        nonnegative=True
     )
 
     paramGrid = (
         ParamGridBuilder()
-        # .addGrid(estimator.rank, [20, 50, 100])
-        .addGrid(estimator.regParam, [.1, .25, .5, .75, 1])
+        .addGrid(estimator.rank, [10, 25, 50])
+        .addGrid(estimator.regParam, [0.01, 0.05, 0.1, 0.2])
         # .addGrid(estimator.maxIter, [10])
         # .addGrid(estimator.nonnegative, [True, False])
         .build()
@@ -74,12 +74,13 @@ def cv_grid_search(train_df, test_df):
 
 
 def plot_scores(train_df):
-    best_rank_so_far = 6
-    best_regParam_so_far = 0.5
+    best_rank_so_far = 50
+    best_regParam_so_far = 0.1
 
     train_df, val_df = train_df.randomSplit(weights=[0.75, 0.25])
-    print('[plot_scores] Num train ratings: {}'.format(train_df.count()))
-    print('[plot_scores] Num validation ratings: {}'.format(val_df.count()))
+
+    print_counts(train_df, 'plot_scores Train')
+    print_counts(val_df, 'plot_scores Validation')
 
     evaluator = RegressionEvaluator(
         metricName="rmse", labelCol="rating", predictionCol="prediction")
@@ -96,10 +97,10 @@ def plot_scores(train_df):
     baseline_score_train = evaluator.evaluate(model.transform(train_df))
     baseline_score_val = evaluator.evaluate(model.transform(val_df))
 
-    print('Train Baseline RSME score: {}'.format(baseline_score_train))
-    print('Validation Baseline RSME score: {}'.format(baseline_score_val))
+    print('Train Baseline RMSE score: {}'.format(baseline_score_train))
+    print('Validation Baseline RMSE score: {}'.format(baseline_score_val))
     
-    ranks = [1, 2, 3, 4, 5, 6, 7, 10, 15, 20, 25, 35, 50, 100]
+    ranks = [1, 2, 3, 4, 5, 6, 7, 10, 15, 20, 25, 35, 50, 75, 100]#, 150, 200, 400]
     rank_scores_train = []
     rank_scores_val =[]
 
@@ -116,7 +117,7 @@ def plot_scores(train_df):
             rank=rank,
             regParam=best_regParam_so_far,
             maxIter=10,
-            nonnegative=False
+            nonnegative=True
         )
 
         model = estimator.fit(train_df)
@@ -160,7 +161,7 @@ def plot_scores(train_df):
     print(rank_scores_val - baseline_score_val)
 
 
-    regParams = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+    regParams = [0.01, 0.025, 0.05, 0.075, 0.1, 0.2, 0.3, 0.4, 0.5]
     regParam_scores_train = []
     regParam_scores_val =[]
 
@@ -176,7 +177,7 @@ def plot_scores(train_df):
             rank=best_rank_so_far,
             regParam=regParam,
             maxIter=10,
-            nonnegative=False
+            nonnegative=True
         )
 
         model = estimator.fit(train_df)
@@ -252,9 +253,9 @@ def plot_scores(train_df):
     flat_axes[1].legend()
 
     # flat_axes[2].plot(ranks, rank_scores_train - baseline_score_train,
-    #     label='Train Diff')
+    #     label='Train Diff', alpha=0.5)
     flat_axes[2].plot(ranks, rank_scores_val - baseline_score_val,
-        label='Validation Diff')
+        label='Validation Diff', alpha=0.5)
     flat_axes[2].set_title('RMSE - Baseline vs. Rank (regParam={})'
         .format(best_regParam_so_far))
     flat_axes[2].set_xlabel('Rank')
@@ -262,11 +263,11 @@ def plot_scores(train_df):
     flat_axes[2].legend()
 
     flat_axes[3].plot(regParams, regParam_scores_train - baseline_score_train,
-        label='Train Diff')
+        label='Train Diff', alpha=0.5)
     flat_axes[3].plot(regParams, regParam_scores_val - baseline_score_val,
-        label='Validation Diff')
+        label='Validation Diff', alpha=0.5)
     flat_axes[3].set_title('RMSE - Baseline vs. regParam (Rank={})'
-        .format(best_regParam_so_far))
+        .format(best_rank_so_far))
     flat_axes[3].set_xlabel('regParam')
     flat_axes[3].set_ylabel('RMSE')
     flat_axes[3].legend()
@@ -315,6 +316,15 @@ def eval_model(train_df, test_df):
     print("Test RMSE: {}".format(test_rmse))
 
 
+def print_counts(ratings_df, label):
+    print('[{}] Num total ratings: {}'
+        .format(label, ratings_df.count()))
+    print('[{}] Num users: {}'
+        .format(label, ratings_df.groupBy('user').count().count()))
+    print('[{}] Num restaurants: {}'
+        .format(label, ratings_df.groupBy('item').count().count()))
+
+
 def main():
     spark = (
         ps.sql.SparkSession.builder
@@ -329,10 +339,10 @@ def main():
     # Randomly split data into train and test datasets
     train_df, test_df = ratings_df.randomSplit(weights=[0.75, 0.25])
 
-    print(ratings_df.printSchema())
-    print('Num total ratings: {}'.format(ratings_df.count()))
-    print('Num train ratings: {}'.format(train_df.count()))
-    print('Num test ratings: {}'.format(test_df.count()))
+    # print(ratings_df.printSchema())
+    print_counts(ratings_df, 'Total')
+    print_counts(train_df, 'Train')
+    print_counts(test_df, 'Test')
 
     # cv_grid_search(train_df, test_df)
     
