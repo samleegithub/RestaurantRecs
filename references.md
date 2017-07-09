@@ -26,6 +26,7 @@ https://ai2-s2-pdfs.s3.amazonaws.com/0fcc/45600283abca12ea2f422e3fb2575f4c7fc0.p
 Spark ALS Documentation:
 https://spark.apache.org/docs/latest/ml-collaborative-filtering.html
 https://spark.apache.org/docs/latest/api/python/pyspark.ml.html#pyspark.ml.recommendation.ALS
+https://stackoverflow.com/questions/37260902/tuning-parameters-for-implicit-pyspark-ml-als-matrix-factorization-model-through
 
 
 New User Problem:

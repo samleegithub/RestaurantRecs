@@ -6,6 +6,7 @@ from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml import Pipeline
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 from pyspark.ml.recommendation import ALS
+import pyspark.sql.functions as F
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
@@ -32,6 +33,9 @@ def compute_score(predictions_df):
 
 def cv_grid_search(train_df, test_df):
     estimator = Recommender(
+        useALS=True,
+        lambda_1=5,
+        lambda_2=8,
         userCol='user',
         itemCol='item',
         ratingCol='rating',
@@ -43,8 +47,10 @@ def cv_grid_search(train_df, test_df):
 
     paramGrid = (
         ParamGridBuilder()
-        .addGrid(estimator.rank, [10, 25, 50])
-        .addGrid(estimator.regParam, [0.01, 0.05, 0.1, 0.2])
+        # .addGrid(estimator.lambda_1, [4, 5, 6])
+        # .addGrid(estimator.lambda_2, [6, 7, 8, 9])
+        .addGrid(estimator.rank, [40, 50, 75, 100])
+        .addGrid(estimator.regParam, [0.15, 0.2, 0.25])
         # .addGrid(estimator.maxIter, [10])
         # .addGrid(estimator.nonnegative, [True, False])
         .build()
@@ -66,16 +72,30 @@ def cv_grid_search(train_df, test_df):
     print('Crossval done in {} seconds.'
         .format(time.monotonic() - step_start_time))
 
-    print(cv.getEstimatorParamMaps())
-    print(cvModel.avgMetrics)
+
+    paramMaps = cv.getEstimatorParamMaps()
+    avgMetrics = cvModel.avgMetrics
+
+    min_index = np.argmin(avgMetrics)
+
+    # print(paramMaps)
+    # print(avgMetrics)
+
+    print('Best Params:')
+    for key, value in paramMaps[min_index].items():
+        print('{} : {}'.format(key, value))
+    print('Best Metric: {}'.format(avgMetrics[min_index]))
 
     rmse = evaluator.evaluate(cvModel.transform(test_df))
     print("Test RMSE: {}".format(rmse))
 
 
 def plot_scores(train_df):
-    best_rank_so_far = 50
-    best_regParam_so_far = 0.1
+    best_rank_so_far = 10
+    best_regParam_so_far = 0.2
+
+    print('best_rank_so_far: {}'.format(best_rank_so_far))
+    print('best_regParam_so_far: {}'.format(best_regParam_so_far))
 
     train_df, val_df = train_df.randomSplit(weights=[0.75, 0.25])
 
@@ -87,6 +107,8 @@ def plot_scores(train_df):
 
     # First get baseline scores with ALS turned off
     estimator = Recommender(
+        lambda_1=5,
+        lambda_2=10,
         useALS=False,
         userCol='user',
         itemCol='item',
@@ -110,6 +132,8 @@ def plot_scores(train_df):
         step_start_time = time.monotonic()
 
         estimator = Recommender(
+            lambda_1=5,
+            lambda_2=10,
             useALS=True,
             userCol='user',
             itemCol='item',
@@ -171,6 +195,8 @@ def plot_scores(train_df):
         step_start_time = time.monotonic()
 
         estimator = Recommender(
+            lambda_1=5,
+            lambda_2=10,
             userCol='user',
             itemCol='item',
             ratingCol='rating',
@@ -323,6 +349,10 @@ def print_counts(ratings_df, label):
         .format(label, ratings_df.groupBy('user').count().count()))
     print('[{}] Num restaurants: {}'
         .format(label, ratings_df.groupBy('item').count().count()))
+    print('[{}] Avg num ratings per user: {}'
+        .format(label, ratings_df.groupBy('user').count().agg(F.avg('count')).collect()[0][0]))
+    print('[{}] Avg num ratings per restaurant: {}'
+        .format(label, ratings_df.groupBy('item').count().agg(F.avg('count')).collect()[0][0]))
 
 
 def main():
@@ -344,9 +374,9 @@ def main():
     print_counts(train_df, 'Train')
     print_counts(test_df, 'Test')
 
-    # cv_grid_search(train_df, test_df)
+    cv_grid_search(train_df, test_df)
     
-    plot_scores(train_df)
+    # plot_scores(train_df)
     
     # eval_model(train_df, test_df)
 

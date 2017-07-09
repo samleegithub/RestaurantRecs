@@ -15,6 +15,14 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
                           "ALS model or simple rating averages",
                           typeConverter=TypeConverters.toBoolean)
 
+    lambda_1 = Param(Params._dummy(), "lambda_1", "regularization parameter "
+                     + "for item bias",
+                     typeConverter=TypeConverters.toInt)
+
+    lambda_2 = Param(Params._dummy(), "lambda_2", "regularization parameter "
+                     + "for user bias",
+                     typeConverter=TypeConverters.toInt)
+
     rank = Param(Params._dummy(), "rank", "rank of the factorization",
                  typeConverter=TypeConverters.toInt)
 
@@ -63,9 +71,11 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
 
     @keyword_only
-    def __init__(self, useALS=True, rank=10, maxIter=10, regParam=0.1, numUserBlocks=10, numItemBlocks=10,
-                 implicitPrefs=False, alpha=1.0, userCol="user", itemCol="item", seed=None,
-                 ratingCol="rating", nonnegative=False, checkpointInterval=10,
+    def __init__(self, useALS=True, lambda_1=25, lambda_2=10, rank=10,
+                 maxIter=10, regParam=0.1, numUserBlocks=10, numItemBlocks=10,
+                 implicitPrefs=False, alpha=1.0, userCol="user",
+                 itemCol="item", seed=None, ratingCol="rating",
+                 nonnegative=False, checkpointInterval=10,
                  intermediateStorageLevel="MEMORY_AND_DISK",
                  finalStorageLevel="MEMORY_AND_DISK", coldStartStrategy="nan"):
         '''
@@ -78,21 +88,27 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         None
         '''
         super(Recommender, self).__init__()
-        self._setDefault(useALS=True, rank=10, maxIter=10, regParam=0.1, numUserBlocks=10, numItemBlocks=10,
-                         implicitPrefs=False, alpha=1.0, userCol="user", itemCol="item",
-                         ratingCol="rating", nonnegative=False, checkpointInterval=10,
+        self._setDefault(useALS=True, lambda_1=25, lambda_2=10, rank=10,
+                         maxIter=10, regParam=0.1, numUserBlocks=10,
+                         numItemBlocks=10, implicitPrefs=False, alpha=1.0,
+                         userCol="user", itemCol="item", ratingCol="rating",
+                         nonnegative=False, checkpointInterval=10,
                          intermediateStorageLevel="MEMORY_AND_DISK",
-                         finalStorageLevel="MEMORY_AND_DISK", coldStartStrategy="nan")
+                         finalStorageLevel="MEMORY_AND_DISK",
+                         coldStartStrategy="nan")
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
 
 
     @keyword_only
-    def setParams(self, useALS=True, rank=10, maxIter=10, regParam=0.1, numUserBlocks=10, numItemBlocks=10,
-                  implicitPrefs=False, alpha=1.0, userCol="user", itemCol="item", seed=None,
-                  ratingCol="rating", nonnegative=False, checkpointInterval=10,
+    def setParams(self, useALS=True, lambda_1=25, lambda_2=10, rank=10,
+                  maxIter=10, regParam=0.1, numUserBlocks=10, numItemBlocks=10,
+                  implicitPrefs=False, alpha=1.0, userCol="user",
+                  itemCol="item", seed=None, ratingCol="rating",
+                  nonnegative=False, checkpointInterval=10,
                   intermediateStorageLevel="MEMORY_AND_DISK",
-                  finalStorageLevel="MEMORY_AND_DISK", coldStartStrategy="nan"):
+                  finalStorageLevel="MEMORY_AND_DISK",
+                  coldStartStrategy="nan"):
         kwargs = self._input_kwargs
         return self._set(**kwargs)
 
@@ -110,6 +126,29 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         """
         return self.getOrDefault(self.useALS)
 
+    def setLambda_1(self, value):
+        """
+        Sets the value of :py:attr:`rank`.
+        """
+        return self._set(lambda_1=value)
+
+    def getLambda_1(self):
+        """
+        Gets the value of rank or its default value.
+        """
+        return self.getOrDefault(self.lambda_1)
+
+    def setLambda_2(self, value):
+        """
+        Sets the value of :py:attr:`rank`.
+        """
+        return self._set(lambda_2=value)
+
+    def getLambda_2(self):
+        """
+        Gets the value of rank or its default value.
+        """
+        return self.getOrDefault(self.lambda_2)
 
     def setRank(self, value):
         """
@@ -310,10 +349,6 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
                                'avg_rating')
         )
 
-        # Regularization Parameters
-        lambda_1 = 25
-        lambda_2 = 10
-
         item_bias_df = (
             ratings_df
             .crossJoin(avg_rating_df)
@@ -328,7 +363,7 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
             .withColumn(
                 'item_bias',
                 F.col('sum_diffs')
-                / (lambda_1 + F.col('ct'))
+                / (self.getLambda_1() + F.col('ct'))
             )
             .select(
                 self.getItemCol(),
@@ -352,7 +387,7 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
             .withColumn(
                 'user_bias',
                 F.col('sum_diffs')
-                / (lambda_2 + F.col('ct'))
+                / (self.getLambda_2() + F.col('ct'))
             )
             .select(
                 self.getUserCol(),
