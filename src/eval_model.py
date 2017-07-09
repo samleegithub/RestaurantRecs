@@ -1,4 +1,5 @@
 from recommender import Recommender
+# from bias_als import BiasALS
 import numpy as np
 import pyspark as ps
 import time
@@ -20,7 +21,7 @@ def compute_score(predictions_df):
     Return the average actual rating of those restaurants.
     """
     # for each user
-    g = predictions_df.groupBy('user_id')
+    g = predictions_df.groupBy('user')
 
     # detect the top_5 restaurants as predicted by your algorithm
     top_5 = g['prediction'].transform(
@@ -28,7 +29,7 @@ def compute_score(predictions_df):
     )
 
     # return the mean of the actual score on those
-    return predictions_df['stars'][top_5].mean()
+    return predictions_df['rating'][top_5].mean()
 
 
 def cv_grid_search(train_df, test_df):
@@ -39,19 +40,19 @@ def cv_grid_search(train_df, test_df):
         userCol='user',
         itemCol='item',
         ratingCol='rating',
-        rank=100,
+        rank=10,
         regParam=0.2,
         maxIter=10,
-        nonnegative=True
+        nonnegative=False
     )
 
     paramGrid = (
         ParamGridBuilder()
         # .addGrid(estimator.lambda_1, [4, 5, 6])
         # .addGrid(estimator.lambda_2, [6, 7, 8, 9])
-        .addGrid(estimator.rank, [90, 100, 150])
-        # .addGrid(estimator.regParam, [0.15, 0.2, 0.25])
-        # .addGrid(estimator.maxIter, [10])
+        .addGrid(estimator.rank, [10, 15, 20])
+        # .addGrid(estimator.regParam, [0.1, 0.2, 0.3])
+        # .addGrid(estimator.maxIter, [2, 3, 4])
         # .addGrid(estimator.nonnegative, [True, False])
         .build()
     )
@@ -86,12 +87,31 @@ def cv_grid_search(train_df, test_df):
         print('{} : {}'.format(key, value))
     print('Best Metric: {}'.format(avgMetrics[min_index]))
 
-    rmse = evaluator.evaluate(cvModel.transform(test_df))
+    rmse = evaluator.evaluate(cvModel.bestModel.transform(test_df))
     print("Test RMSE: {}".format(rmse))
 
 
+def get_baseline_scores(train_df, val_df, evaluator):
+    estimator = Recommender(
+        lambda_1=5,
+        lambda_2=8,
+        useALS=False,
+        userCol='user',
+        itemCol='item',
+        ratingCol='rating'
+    )
+
+    model = estimator.fit(train_df)
+    baseline_score_train = evaluator.evaluate(model.transform(train_df))
+    baseline_score_val = evaluator.evaluate(model.transform(val_df))
+
+    print('Train Baseline RMSE score: {}'.format(baseline_score_train))
+    print('Validation Baseline RMSE score: {}'.format(baseline_score_val))
+
+    return baseline_score_train, baseline_score_val
+
 def plot_scores(train_df):
-    best_rank_so_far = 10
+    best_rank_so_far = 100
     best_regParam_so_far = 0.2
 
     print('best_rank_so_far: {}'.format(best_rank_so_far))
@@ -106,23 +126,11 @@ def plot_scores(train_df):
         metricName="rmse", labelCol="rating", predictionCol="prediction")
 
     # First get baseline scores with ALS turned off
-    estimator = Recommender(
-        lambda_1=5,
-        lambda_2=10,
-        useALS=False,
-        userCol='user',
-        itemCol='item',
-        ratingCol='rating'
+    baseline_score_train, baseline_score_val = (
+        get_baseline_scores(train_df, val_df, evaluator)
     )
-
-    model = estimator.fit(train_df)
-    baseline_score_train = evaluator.evaluate(model.transform(train_df))
-    baseline_score_val = evaluator.evaluate(model.transform(val_df))
-
-    print('Train Baseline RMSE score: {}'.format(baseline_score_train))
-    print('Validation Baseline RMSE score: {}'.format(baseline_score_val))
     
-    ranks = [1, 2, 3, 4, 5, 6, 7, 10, 15, 20, 25, 35, 50, 75, 100]#, 150, 200, 400]
+    ranks = [5, 10, 25, 50, 75, 100, 150]
     rank_scores_train = []
     rank_scores_val =[]
 
@@ -133,14 +141,14 @@ def plot_scores(train_df):
 
         estimator = Recommender(
             lambda_1=5,
-            lambda_2=10,
+            lambda_2=8,
             useALS=True,
             userCol='user',
             itemCol='item',
             ratingCol='rating',
             rank=rank,
             regParam=best_regParam_so_far,
-            maxIter=10,
+            maxIter=5,
             nonnegative=True
         )
 
@@ -185,7 +193,7 @@ def plot_scores(train_df):
     print(rank_scores_val - baseline_score_val)
 
 
-    regParams = [0.01, 0.025, 0.05, 0.075, 0.1, 0.2, 0.3, 0.4, 0.5]
+    regParams = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35]
     regParam_scores_train = []
     regParam_scores_val =[]
 
@@ -196,13 +204,13 @@ def plot_scores(train_df):
 
         estimator = Recommender(
             lambda_1=5,
-            lambda_2=10,
+            lambda_2=8,
             userCol='user',
             itemCol='item',
             ratingCol='rating',
             rank=best_rank_so_far,
             regParam=regParam,
-            maxIter=10,
+            maxIter=5,
             nonnegative=True
         )
 
@@ -304,13 +312,16 @@ def plot_scores(train_df):
 
 def eval_model(train_df, test_df):
     estimator = Recommender(
+        useALS=True,
+        lambda_1=5,
+        lambda_2=8,
         userCol='user',
         itemCol='item',
         ratingCol='rating',
-        rank=10,
-        regParam=0.5,
-        maxIter=10,
-        nonnegative=False
+        rank=100,
+        regParam=0.2,
+        maxIter=5,
+        nonnegative=True
     )
 
     evaluator = RegressionEvaluator(
@@ -343,6 +354,7 @@ def eval_model(train_df, test_df):
 
 
 def print_counts(ratings_df, label):
+    return
     print('[{}] Num total ratings: {}'
         .format(label, ratings_df.count()))
     print('[{}] Num users: {}'
@@ -374,9 +386,9 @@ def main():
     print_counts(train_df, 'Train')
     print_counts(test_df, 'Test')
 
-    cv_grid_search(train_df, test_df)
+    # cv_grid_search(train_df, test_df)
     
-    # plot_scores(train_df)
+    plot_scores(train_df)
     
     # eval_model(train_df, test_df)
 
