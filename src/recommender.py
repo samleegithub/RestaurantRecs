@@ -15,6 +15,10 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
                           "ALS model or simple rating averages",
                           typeConverter=TypeConverters.toBoolean)
 
+    useBias = Param(Params._dummy(), "useBias", "whether to use " +
+                          "bias with ALS model",
+                          typeConverter=TypeConverters.toBoolean)
+
     lambda_1 = Param(Params._dummy(), "lambda_1", "regularization parameter "
                      + "for item bias",
                      typeConverter=TypeConverters.toInt)
@@ -71,13 +75,15 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
 
     @keyword_only
-    def __init__(self, useALS=True, lambda_1=25, lambda_2=10, rank=10,
+    def __init__(self, useALS=True, useBias=True, lambda_1=25, lambda_2=10, rank=10,
                  maxIter=10, regParam=0.1, numUserBlocks=10, numItemBlocks=10,
                  implicitPrefs=False, alpha=1.0, userCol="user",
                  itemCol="item", seed=None, ratingCol="rating",
                  nonnegative=False, checkpointInterval=10,
                  intermediateStorageLevel="MEMORY_AND_DISK",
-                 finalStorageLevel="MEMORY_AND_DISK", coldStartStrategy="nan"):
+                 finalStorageLevel="MEMORY_AND_DISK"
+                 # , coldStartStrategy="nan"
+                 ):
         '''
         Parameters
         ==========
@@ -88,27 +94,29 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         None
         '''
         super(Recommender, self).__init__()
-        self._setDefault(useALS=True, lambda_1=25, lambda_2=10, rank=10,
+        self._setDefault(useALS=True, useBias=True, lambda_1=25, lambda_2=10, rank=10,
                          maxIter=10, regParam=0.1, numUserBlocks=10,
                          numItemBlocks=10, implicitPrefs=False, alpha=1.0,
                          userCol="user", itemCol="item", ratingCol="rating",
                          nonnegative=False, checkpointInterval=10,
                          intermediateStorageLevel="MEMORY_AND_DISK",
-                         finalStorageLevel="MEMORY_AND_DISK",
-                         coldStartStrategy="nan")
+                         finalStorageLevel="MEMORY_AND_DISK"
+                         # , coldStartStrategy="nan"
+                         )
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
 
 
     @keyword_only
-    def setParams(self, useALS=True, lambda_1=25, lambda_2=10, rank=10,
+    def setParams(self, useALS=True, useBias=True, lambda_1=25, lambda_2=10, rank=10,
                   maxIter=10, regParam=0.1, numUserBlocks=10, numItemBlocks=10,
                   implicitPrefs=False, alpha=1.0, userCol="user",
                   itemCol="item", seed=None, ratingCol="rating",
                   nonnegative=False, checkpointInterval=10,
                   intermediateStorageLevel="MEMORY_AND_DISK",
-                  finalStorageLevel="MEMORY_AND_DISK",
-                  coldStartStrategy="nan"):
+                  finalStorageLevel="MEMORY_AND_DISK"
+                  # , coldStartStrategy="nan"
+                  ):
         kwargs = self._input_kwargs
         return self._set(**kwargs)
 
@@ -119,12 +127,23 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         """
         return self._set(useALS=value)
 
-
     def getUseALS(self):
         """
         Gets the value of useALS or its default value.
         """
         return self.getOrDefault(self.useALS)
+
+    def setUseBias(self, value):
+        """
+        Sets the value of :py:attr:`useBias`.
+        """
+        return self._set(useBias=value)
+
+    def getUseBias(self):
+        """
+        Gets the value of useBias or its default value.
+        """
+        return self.getOrDefault(self.useBias)
 
     def setLambda_1(self, value):
         """
@@ -156,13 +175,11 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         """
         return self._set(rank=value)
 
-
     def getRank(self):
         """
         Gets the value of rank or its default value.
         """
         return self.getOrDefault(self.rank)
-
 
     def setNumUserBlocks(self, value):
         """
@@ -170,13 +187,11 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         """
         return self._set(numUserBlocks=value)
 
-
     def getNumUserBlocks(self):
         """
         Gets the value of numUserBlocks or its default value.
         """
         return self.getOrDefault(self.numUserBlocks)
-
 
     def setNumItemBlocks(self, value):
         """
@@ -184,13 +199,11 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         """
         return self._set(numItemBlocks=value)
 
-
     def getNumItemBlocks(self):
         """
         Gets the value of numItemBlocks or its default value.
         """
         return self.getOrDefault(self.numItemBlocks)
-
 
     def setNumBlocks(self, value):
         """
@@ -199,13 +212,11 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         self._set(numUserBlocks=value)
         return self._set(numItemBlocks=value)
 
-
     def setImplicitPrefs(self, value):
         """
         Sets the value of :py:attr:`implicitPrefs`.
         """
         return self._set(implicitPrefs=value)
-
 
     def getImplicitPrefs(self):
         """
@@ -213,13 +224,11 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         """
         return self.getOrDefault(self.implicitPrefs)
 
-
     def setAlpha(self, value):
         """
         Sets the value of :py:attr:`alpha`.
         """
         return self._set(alpha=value)
-
 
     def getAlpha(self):
         """
@@ -227,13 +236,11 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         """
         return self.getOrDefault(self.alpha)
 
-
     def setUserCol(self, value):
         """
         Sets the value of :py:attr:`userCol`.
         """
         return self._set(userCol=value)
-
 
     def getUserCol(self):
         """
@@ -241,13 +248,11 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         """
         return self.getOrDefault(self.userCol)
 
-
     def setItemCol(self, value):
         """
         Sets the value of :py:attr:`itemCol`.
         """
         return self._set(itemCol=value)
-
 
     def getItemCol(self):
         """
@@ -255,13 +260,11 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         """
         return self.getOrDefault(self.itemCol)
 
-
     def setRatingCol(self, value):
         """
         Sets the value of :py:attr:`ratingCol`.
         """
         return self._set(ratingCol=value)
-
 
     def getRatingCol(self):
         """
@@ -269,13 +272,11 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         """
         return self.getOrDefault(self.ratingCol)
 
-
     def setNonnegative(self, value):
         """
         Sets the value of :py:attr:`nonnegative`.
         """
         return self._set(nonnegative=value)
-
 
     def getNonnegative(self):
         """
@@ -283,13 +284,11 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         """
         return self.getOrDefault(self.nonnegative)
 
-
     def setIntermediateStorageLevel(self, value):
         """
         Sets the value of :py:attr:`intermediateStorageLevel`.
         """
         return self._set(intermediateStorageLevel=value)
-
 
     def getIntermediateStorageLevel(self):
         """
@@ -297,13 +296,11 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         """
         return self.getOrDefault(self.intermediateStorageLevel)
 
-
     def setFinalStorageLevel(self, value):
         """
         Sets the value of :py:attr:`finalStorageLevel`.
         """
         return self._set(finalStorageLevel=value)
-
 
     def getFinalStorageLevel(self):
         """
@@ -311,19 +308,17 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         """
         return self.getOrDefault(self.finalStorageLevel)
 
+    # def setColdStartStrategy(self, value):
+    #     """
+    #     Sets the value of :py:attr:`coldStartStrategy`.
+    #     """
+    #     return self._set(coldStartStrategy=value)
 
-    def setColdStartStrategy(self, value):
-        """
-        Sets the value of :py:attr:`coldStartStrategy`.
-        """
-        return self._set(coldStartStrategy=value)
-
-
-    def getColdStartStrategy(self):
-        """
-        Gets the value of coldStartStrategy or its default value.
-        """
-        return self.getOrDefault(self.coldStartStrategy)
+    # def getColdStartStrategy(self):
+    #     """
+    #     Gets the value of coldStartStrategy or its default value.
+    #     """
+    #     return self.getOrDefault(self.coldStartStrategy)
 
 
     def _fit(self, ratings_df):
@@ -341,12 +336,19 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         =======
         self
         '''
+        # avg_rating_df = (
+        #     ratings_df
+        #     .groupBy()
+        #     .avg(self.getRatingCol())
+        #     .withColumnRenamed('avg({})'.format(self.getRatingCol()),
+        #                        'avg_rating')
+        # )
+
         avg_rating_df = (
             ratings_df
-            .groupBy()
-            .avg(self.getRatingCol())
-            .withColumnRenamed('avg({})'.format(self.getRatingCol()),
-                               'avg_rating')
+            .agg(
+                F.avg(self.getRatingCol()).alias('avg_rating')
+            )
         )
 
         item_bias_df = (
@@ -396,25 +398,29 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         )
 
         if self.getUseALS():
-            # print('Fit using ALS!')
-            residual_df = (
-                ratings_df
-                .crossJoin(avg_rating_df)
-                .join(user_bias_df, on=self.getUserCol())
-                .join(item_bias_df, on=self.getItemCol())
-                .withColumn(
-                    'residual',
-                    F.col(self.getRatingCol())
-                    - F.col('avg_rating')
-                    - F.col('user_bias')
-                    - F.col('item_bias')
+            if self.getUseBias():
+                residual_df = (
+                    ratings_df
+                    .crossJoin(avg_rating_df)
+                    .join(user_bias_df, on=self.getUserCol())
+                    .join(item_bias_df, on=self.getItemCol())
+                    .withColumn(
+                        self.getRatingCol(),
+                        F.col(self.getRatingCol())
+                        - F.col('avg_rating')
+                        - F.col('user_bias')
+                        - F.col('item_bias')
+                        + 5.0
+                    )
+                    .select(
+                        self.getUserCol(),
+                        self.getItemCol(),
+                        self.getRatingCol()
+                    )
                 )
-                .select(
-                    self.getUserCol(),
-                    self.getItemCol(),
-                    'residual'
-                )
-            )
+            else:
+                residual_df = ratings_df
+                # self.setColdStartStrategy('drop')
 
             als_model = ALS(
                 rank=self.getRank(),
@@ -426,7 +432,7 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
                 alpha=self.getAlpha(),
                 userCol=self.getUserCol(),
                 itemCol=self.getItemCol(),
-                ratingCol='residual',
+                ratingCol=self.getRatingCol(),
                 nonnegative=self.getNonnegative(),
                 checkpointInterval=self.getCheckpointInterval(),
                 intermediateStorageLevel=self.getIntermediateStorageLevel(),
@@ -434,22 +440,43 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
             )
 
             recommender = als_model.fit(residual_df)
+
+            # residual_stats = (
+            #     residual_df
+            #     .agg(
+            #         F.min('rating').alias('min_residual'),
+            #         F.max('rating').alias('max_residual'),
+            #         F.avg('rating').alias('avg_residual')
+            #     )
+            #     .collect()
+            # )
+
+            # print(residual_stats)
+
         else:
             # print('Fit without ALS!')
             recommender = None
 
 
-        return (
-            RecommenderModel(self.getUseALS(), recommender, avg_rating_df,
-                user_bias_df, item_bias_df)
+        return(
+            RecommenderModel(
+                self.getUseALS(), self.getUseBias(),
+                # self.getColdStartStrategy(),
+                recommender, avg_rating_df,
+                user_bias_df, item_bias_df
+            )
         )
 
 
 class RecommenderModel(Model):
-    def __init__(self, useALS, recommender, avg_rating_df, user_bias_df,
-                 item_bias_df):
+    def __init__(self, useALS, useBias, 
+                 # coldStartStrategy,
+                 recommender,
+                 avg_rating_df, user_bias_df, item_bias_df):
         super(RecommenderModel, self).__init__()
         self.useALS = useALS
+        self.useBias = useBias
+        # self.coldStartStrategy = coldStartStrategy
         self.recommender = recommender
         self.avg_rating_df = avg_rating_df
         self.user_bias_df = user_bias_df
@@ -518,32 +545,39 @@ class RecommenderModel(Model):
 
         '''
         if self.useALS:
-            return (
-                self.recommender.transform(requests_df)
-                .crossJoin(self.avg_rating_df)
-                .join(self.user_bias_df, on='user')
-                .join(self.item_bias_df, on='item')
-                .fillna({
-                    'prediction': 0.0,
-                    'user_bias': 0.0,
-                    'item_bias': 0.0
-                })
-                .withColumn(
-                    'prediction',
-                    F.col('prediction')
-                    + F.col('avg_rating')
-                    + F.col('user_bias')
-                    + F.col('item_bias')
+            if self.useBias:
+                return(
+                    self.recommender.transform(requests_df)
+                    .crossJoin(self.avg_rating_df)
+                    .join(self.user_bias_df, on='user')
+                    .join(self.item_bias_df, on='item')
+                    .fillna({
+                        'prediction': 5.0,
+                        'user_bias': 0.0,
+                        'item_bias': 0.0
+                    })
+                    .withColumn(
+                        'prediction',
+                        F.col('prediction')
+                        + F.col('avg_rating')
+                        + F.col('user_bias')
+                        + F.col('item_bias')
+                        - 5.0
+                    )
+                    .select(
+                        'user',
+                        'item',
+                        'rating',
+                        'prediction'
+                    )
                 )
-                .select(
-                    'user',
-                    'item',
-                    'rating',
-                    'prediction'
+            else:
+                return(
+                    self.recommender.transform(requests_df)
+                    .dropna(how='all', subset=['prediction'])
                 )
-            )
         else:
-            return (
+            return(
                 requests_df
                 .crossJoin(self.avg_rating_df)
                 .join(self.user_bias_df, on='user')

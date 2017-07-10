@@ -35,22 +35,23 @@ def compute_score(predictions_df):
 def cv_grid_search(train_df, test_df):
     estimator = Recommender(
         useALS=True,
+        useBias=True,
         lambda_1=5,
         lambda_2=8,
         userCol='user',
         itemCol='item',
         ratingCol='rating',
         rank=10,
-        regParam=0.2,
+        regParam=0.25,
         maxIter=10,
-        nonnegative=False
+        nonnegative=True
     )
 
     paramGrid = (
         ParamGridBuilder()
-        # .addGrid(estimator.lambda_1, [4, 5, 6])
-        # .addGrid(estimator.lambda_2, [6, 7, 8, 9])
-        .addGrid(estimator.rank, [10, 15, 20])
+        .addGrid(estimator.lambda_1, [1, 2, 4, 8, 16])
+        .addGrid(estimator.lambda_2, [1, 2, 4, 8, 16])
+        # .addGrid(estimator.rank, [8, 16, 32])
         # .addGrid(estimator.regParam, [0.1, 0.2, 0.3])
         # .addGrid(estimator.maxIter, [2, 3, 4])
         # .addGrid(estimator.nonnegative, [True, False])
@@ -91,10 +92,46 @@ def cv_grid_search(train_df, test_df):
     print("Test RMSE: {}".format(rmse))
 
 
-def get_baseline_scores(train_df, val_df, evaluator):
+def get_baseline_scores(train_df, val_df, evaluator, lambda_1, lambda_2):
+    avg_rating_df = (
+        train_df
+        .agg(
+            F.avg('rating').alias('avg_rating')
+        )
+    )
+
+    # Naive model: Just use average rating.
+    train_predict_df = (
+        train_df
+        .crossJoin(avg_rating_df)
+        .select(
+            'user',
+            'item',
+            'rating',
+            F.col('avg_rating').alias('prediction')
+        )
+    )
+
+    val_predict_df = (
+        val_df
+        .crossJoin(avg_rating_df)
+        .select(
+            'user',
+            'item',
+            'rating',
+            F.col('avg_rating').alias('prediction')
+        )
+    )
+
+    naive_score_train = evaluator.evaluate(train_predict_df)
+    naive_score_val = evaluator.evaluate(val_predict_df)
+
+    print('Train Naive RMSE score: {}'.format(naive_score_train))
+    print('Validation Naive RMSE score: {}'.format(naive_score_val))
+
     estimator = Recommender(
-        lambda_1=5,
-        lambda_2=8,
+        lambda_1=lambda_1,
+        lambda_2=lambda_2,
         useALS=False,
         userCol='user',
         itemCol='item',
@@ -108,14 +145,31 @@ def get_baseline_scores(train_df, val_df, evaluator):
     print('Train Baseline RMSE score: {}'.format(baseline_score_train))
     print('Validation Baseline RMSE score: {}'.format(baseline_score_val))
 
-    return baseline_score_train, baseline_score_val
+    return (
+        naive_score_train, naive_score_val,
+        baseline_score_train, baseline_score_val
+    )
+
 
 def plot_scores(train_df):
-    best_rank_so_far = 100
-    best_regParam_so_far = 0.2
 
+    best_rank_so_far = 4
+    best_regParam_so_far = 0.25
+    lambda_1 = 5
+    lambda_2 = 8
+    nonnegative=True
+    maxIter = 10
+    useBias = True
+
+    print()
     print('best_rank_so_far: {}'.format(best_rank_so_far))
     print('best_regParam_so_far: {}'.format(best_regParam_so_far))
+    print('lambda_1: {}'.format(lambda_1))
+    print('lambda_2: {}'.format(lambda_2))
+    print('nonnegative: {}'.format(nonnegative))
+    print('maxIter: {}'.format(maxIter))
+    print('useBias: {}'.format(useBias))
+    print()
 
     train_df, val_df = train_df.randomSplit(weights=[0.75, 0.25])
 
@@ -126,11 +180,13 @@ def plot_scores(train_df):
         metricName="rmse", labelCol="rating", predictionCol="prediction")
 
     # First get baseline scores with ALS turned off
-    baseline_score_train, baseline_score_val = (
-        get_baseline_scores(train_df, val_df, evaluator)
+    (   naive_score_train, naive_score_val,
+        baseline_score_train, baseline_score_val
+    ) = (
+        get_baseline_scores(train_df, val_df, evaluator, lambda_1, lambda_2)
     )
     
-    ranks = [5, 10, 25, 50, 75, 100, 150]
+    ranks = [1, 2, 4, 8, 16, 32, 64, 128]
     rank_scores_train = []
     rank_scores_val =[]
 
@@ -140,16 +196,17 @@ def plot_scores(train_df):
         step_start_time = time.monotonic()
 
         estimator = Recommender(
-            lambda_1=5,
-            lambda_2=8,
+            lambda_1=lambda_1,
+            lambda_2=lambda_2,
             useALS=True,
+            useBias=useBias,
             userCol='user',
             itemCol='item',
             ratingCol='rating',
             rank=rank,
             regParam=best_regParam_so_far,
-            maxIter=5,
-            nonnegative=True
+            maxIter=maxIter,
+            nonnegative=nonnegative
         )
 
         model = estimator.fit(train_df)
@@ -179,7 +236,7 @@ def plot_scores(train_df):
 
     rank_scores_train = np.array(rank_scores_train)
     rank_scores_val = np.array(rank_scores_val)
-
+    best_rank_index = np.argmin(rank_scores_val)
 
     print('Ranks:')
     print(ranks)
@@ -191,9 +248,10 @@ def plot_scores(train_df):
     print(rank_scores_train - baseline_score_train)
     print('Validation RMSE - baseline:')
     print(rank_scores_val - baseline_score_val)
+    print('Best Rank: {}'.format(ranks[best_rank_index]))
 
 
-    regParams = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35]
+    regParams = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4]
     regParam_scores_train = []
     regParam_scores_val =[]
 
@@ -203,15 +261,17 @@ def plot_scores(train_df):
         step_start_time = time.monotonic()
 
         estimator = Recommender(
-            lambda_1=5,
-            lambda_2=8,
+            lambda_1=lambda_1,
+            lambda_2=lambda_2,
+            useALS=True,
+            useBias=useBias,
             userCol='user',
             itemCol='item',
             ratingCol='rating',
             rank=best_rank_so_far,
             regParam=regParam,
-            maxIter=5,
-            nonnegative=True
+            maxIter=maxIter,
+            nonnegative=nonnegative
         )
 
         model = estimator.fit(train_df)
@@ -244,6 +304,7 @@ def plot_scores(train_df):
 
     regParam_scores_train = np.array(regParam_scores_train)
     regParam_scores_val = np.array(regParam_scores_val)
+    best_regParam_index = np.argmin(regParam_scores_val)
 
     print('RegParams:')
     print(regParams)
@@ -255,39 +316,52 @@ def plot_scores(train_df):
     print(regParam_scores_train - baseline_score_train)
     print('Validation RMSE - Baseline:')
     print(regParam_scores_val - baseline_score_val)
+    print('Best RegParam: {}'.format(regParams[best_regParam_index]))
+
 
 
     fig, axes = plt.subplots(2, 2, figsize=(15, 9))
     flat_axes = axes.flatten()
 
-    # flat_axes[0].plot(ranks, rank_scores_train, label='Train', alpha=0.5)
-    flat_axes[0].plot(ranks, rank_scores_val, label='Validation', alpha=0.5)
-    # flat_axes[0].axhline(y=baseline_score_train, label='Train Baseline', 
-    #     color='purple', alpha=0.5)
+    flat_axes[0].axhline(y=naive_score_train, label='Train Naive', 
+        color='green', alpha=0.5)
+    flat_axes[0].axhline(y=baseline_score_train, label='Train Baseline', 
+        color='purple', alpha=0.5)
+    flat_axes[0].plot(ranks, rank_scores_train, label='Train Model', alpha=0.5)
+    flat_axes[0].axhline(y=naive_score_val, label='Validation Naive', 
+        color='black', alpha=0.5)
     flat_axes[0].axhline(y=baseline_score_val, label='Validation Baseline', 
         color='orange', alpha=0.5)
+    flat_axes[0].plot(ranks, rank_scores_val, label='Validation Model', alpha=0.5)
+
+
     flat_axes[0].set_title('RMSE vs. Rank (regParam={})'
         .format(best_regParam_so_far))
     flat_axes[0].set_xlabel('Rank')
     flat_axes[0].set_ylabel('RMSE')
     flat_axes[0].legend()
 
-    flat_axes[1].plot(regParams, regParam_scores_train, label='Train',
-        alpha=0.5)
-    flat_axes[1].plot(regParams, regParam_scores_val, label='Validation',
-        alpha=0.5)
+    flat_axes[1].axhline(y=naive_score_train, label='Train Naive', 
+        color='green', alpha=0.5)
     flat_axes[1].axhline(y=baseline_score_train, label='Train Baseline', 
         color='purple', alpha=0.5)
+    flat_axes[1].plot(regParams, regParam_scores_train, label='Train Model',
+        alpha=0.5)
+    flat_axes[1].axhline(y=naive_score_val, label='Validation Naive', 
+        color='black', alpha=0.5)
     flat_axes[1].axhline(y=baseline_score_val, label='Validation Baseline', 
         color='orange', alpha=0.5)
+    flat_axes[1].plot(regParams, regParam_scores_val, label='Validation Model',
+        alpha=0.5)
+
     flat_axes[1].set_title('RMSE vs. regParam (Rank={})'
         .format(best_rank_so_far))
     flat_axes[1].set_xlabel('regParam')
     flat_axes[1].set_ylabel('RMSE')
     flat_axes[1].legend()
 
-    # flat_axes[2].plot(ranks, rank_scores_train - baseline_score_train,
-    #     label='Train Diff', alpha=0.5)
+    flat_axes[2].plot(ranks, rank_scores_train - baseline_score_train,
+        label='Train Diff', alpha=0.5)
     flat_axes[2].plot(ranks, rank_scores_val - baseline_score_val,
         label='Validation Diff', alpha=0.5)
     flat_axes[2].set_title('RMSE - Baseline vs. Rank (regParam={})'
@@ -386,9 +460,9 @@ def main():
     print_counts(train_df, 'Train')
     print_counts(test_df, 'Test')
 
-    # cv_grid_search(train_df, test_df)
+    cv_grid_search(train_df, test_df)
     
-    plot_scores(train_df)
+    # plot_scores(train_df)
     
     # eval_model(train_df, test_df)
 
