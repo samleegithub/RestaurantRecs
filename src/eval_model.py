@@ -18,6 +18,62 @@ spark = (
     .getOrCreate()
 )
 
+
+class NDCG10Evaluator(object):
+    """
+    Implementation of NDCG scoring method
+    https://en.wikipedia.org/wiki/Discounted_cumulative_gain
+    """
+    def __init__(self):
+        pass
+
+    def evaluate(self, predictions_df):
+        predictions_df.registerTempTable("predictions_df")
+        score_df = spark.sql(
+        '''
+        select 1 - avg(p.dcg / a.idcg) as ndcg
+        from (
+            select
+                x.user,
+                sum(x.rating / log(2, 1 + x.pred_row_num)) as dcg
+            from (
+                select
+                    user,
+                    rating,
+                    row_number() OVER (
+                        PARTITION BY user
+                        ORDER BY prediction DESC
+                    ) as pred_row_num
+                from predictions_df
+            ) x 
+            where x.pred_row_num <= 10
+            group by x.user
+        ) p
+        join (
+            select
+                x.user,
+                sum(x.rating / log(2, 1 + x.actual_row_num)) as idcg
+            from (
+                select
+                    user,
+                    rating,
+                    row_number() OVER (
+                        PARTITION BY user
+                        ORDER BY rating DESC
+                    ) as actual_row_num
+                from predictions_df
+            ) x 
+            where x.actual_row_num <= 10
+            group by x.user
+        ) a on a.user = p.user
+        '''
+        )
+        return score_df.collect()[0][0]
+
+    def isLargerBetter(self):
+        return False
+
+
 class NDCGEvaluator(object):
     """
     Implementation of NDCG scoring method
@@ -28,7 +84,7 @@ class NDCGEvaluator(object):
 
     def evaluate(self, predictions_df):
         predictions_df.registerTempTable("predictions_df")
-        df2 = spark.sql(
+        score_df = spark.sql(
         '''
         select 1 - avg(ndcg) as avg_ndcg
         from (
@@ -38,14 +94,18 @@ class NDCGEvaluator(object):
             from (
                 select
                     user,
-                    rating / log(1 + 
-                        row_number() OVER (
+                    rating / log(
+                        2,
+                        1 + row_number()
+                        OVER (
                             PARTITION BY user
                             ORDER BY prediction DESC
                         )
                     ) as dcg,
-                    rating / log(1 + 
-                        row_number() OVER (
+                    rating / log(
+                        2,
+                        1 + row_number()
+                        OVER (
                             PARTITION BY user
                             ORDER BY rating DESC
                         )
@@ -56,7 +116,7 @@ class NDCGEvaluator(object):
         )
         '''
         )
-        return df2.collect()[0][0]
+        return score_df.collect()[0][0]
 
     def isLargerBetter(self):
         return False
@@ -72,7 +132,7 @@ class TopQuantileEvaluator(object):
 
     def evaluate(self, predictions_df):
         predictions_df.registerTempTable("predictions_df")
-        df2 = spark.sql(
+        score_df = spark.sql(
             '''
             select
                 5.0 - avg(p.rating) as score
@@ -86,7 +146,7 @@ class TopQuantileEvaluator(object):
             ) x on p.user = x.user and p.prediction >= x.95_percentile
             '''
         )
-        return df2.collect()[0][0]
+        return score_df.collect()[0][0]
 
     def isLargerBetter(self):
         return False
@@ -96,25 +156,25 @@ def cv_grid_search(train_df, test_df):
     estimator = Recommender(
         useALS=True,
         useBias=True,
-        lambda_1=10,
-        lambda_2=15,
+        lambda_1=7,
+        lambda_2=12,
         userCol='user',
         itemCol='item',
         ratingCol='rating',
-        rank=64,
-        regParam=1,
-        maxIter=10,
+        rank=76,
+        regParam=0.7,
+        maxIter=15,
         nonnegative=True
     )
 
     paramGrid = (
         ParamGridBuilder()
-        # .addGrid(estimator.lambda_1, [5, 10, 15, 20, 25])
-        # .addGrid(estimator.lambda_2, [5, 10, 15, 20, 25])
-        .addGrid(estimator.rank, [1, 8, 16, 32, 64, 128])
+        # .addGrid(estimator.lambda_1, [3, 5, 7])
+        # .addGrid(estimator.lambda_2, [5, 8, 10, 12])
+        # .addGrid(estimator.rank, [76, 80, 84, 88])
         # .addGrid(estimator.regParam, [0.001, 0.0025, 0.005, 0.00625, 0.0075, 0.00875])
-        .addGrid(estimator.regParam, [0.005, 0.01, 0.1, 0.5, 1.0])
-        # .addGrid(estimator.maxIter, [15, 30, 45])
+        # .addGrid(estimator.regParam, [0.56, 0.625, 0.7])
+        .addGrid(estimator.maxIter, [5, 10, 15])
         # .addGrid(estimator.nonnegative, [True, False])
         .build()
     )
@@ -124,7 +184,9 @@ def cv_grid_search(train_df, test_df):
 
     # evaluator = TopQuantileEvaluator()
 
-    evaluator = NDCGEvaluator()
+    # evaluator = NDCGEvaluator()
+
+    evaluator = NDCG10Evaluator()
 
     cv = CrossValidator(
         estimator=estimator,
@@ -225,17 +287,20 @@ def get_baseline_scores(train_df, val_df, evaluator, eval_name, lambda_1, lambda
 
 def plot_scores(train_df):
 
-    best_rank_so_far = 64
-    best_regParam_so_far = 1
-    lambda_1 = 10
-    lambda_2 = 15
+    best_rank_so_far = 76
+    best_regParam_so_far = 0.7
+    lambda_1 = 7
+    lambda_2 = 12
     nonnegative=True
-    maxIter = 10
+    maxIter = 15
     useBias = True
     implicitPrefs = False
 
-    eval_name = 'NDCG'
-    evaluator = NDCGEvaluator()
+    eval_name = 'NDCG10'
+    evaluator = NDCG10Evaluator()
+
+    # eval_name = 'NDCG'
+    # evaluator = NDCGEvaluator()
 
     # eval_name = 'TopQuantileEvaluator'
     # evaluator = TopQuantileEvaluator()
@@ -267,7 +332,7 @@ def plot_scores(train_df):
         baseline_score_train, baseline_score_val
     ) = (
         get_baseline_scores(
-            train_df, val_df, evaluator, eval_name, 5, 8)
+            train_df, val_df, evaluator, eval_name, lambda_1, lambda_2)
     )
     
     ranks = [1, 2, 4, 8, 16, 32, 64, 128]
@@ -336,7 +401,7 @@ def plot_scores(train_df):
     print('Best Rank: {}'.format(ranks[best_rank_index]))
 
 
-    regParams = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
+    regParams = [0.1, 0.5, 1.0, 1.5, 2.0]
     regParam_scores_train = []
     regParam_scores_val =[]
 
