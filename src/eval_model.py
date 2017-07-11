@@ -4,9 +4,7 @@ import numpy as np
 import pyspark as ps
 import time
 from pyspark.ml.evaluation import RegressionEvaluator
-from pyspark.ml import Pipeline
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
-from pyspark.ml.recommendation import ALS
 import pyspark.sql.functions as F
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
