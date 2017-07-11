@@ -4,6 +4,7 @@ https://docs.google.com/presentation/d/1YMPJGo62hRPDz1iXQK2fITJAFOJn6H3oPD5vsrMw
 https://code.facebook.com/posts/861999383875667/recommending-items-to-more-than-a-billion-people/
 http://infolab.stanford.edu/~ullman/mmds/ch9.pdf
 http://files.grouplens.org/papers/algorithmstouserexperience.pdf
+http://fastml.com/evaluating-recommender-systems/
 
 
 Matrix Factorization:

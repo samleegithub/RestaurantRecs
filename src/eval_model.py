@@ -11,55 +11,120 @@ import pyspark.sql.functions as F
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
+spark = (
+    ps.sql.SparkSession.builder
+    # .master("local[8]")
+    .appName("eval_model")
+    .getOrCreate()
+)
 
-# TODO: Implement a NDCG scoring method
-# https://en.wikipedia.org/wiki/Discounted_cumulative_gain
+class NDCGEvaluator(object):
+    """
+    Implementation of NDCG scoring method
+    https://en.wikipedia.org/wiki/Discounted_cumulative_gain
+    """
+    def __init__(self):
+        pass
+
+    def evaluate(self, predictions_df):
+        predictions_df.registerTempTable("predictions_df")
+        df2 = spark.sql(
+        '''
+        select 1 - avg(ndcg) as avg_ndcg
+        from (
+            select
+                user,
+                sum(dcg) / sum(idcg) as ndcg
+            from (
+                select
+                    user,
+                    rating / log(1 + 
+                        row_number() OVER (
+                            PARTITION BY user
+                            ORDER BY prediction DESC
+                        )
+                    ) as dcg,
+                    rating / log(1 + 
+                        row_number() OVER (
+                            PARTITION BY user
+                            ORDER BY rating DESC
+                        )
+                    ) as idcg
+                from predictions_df
+            ) x
+            group by user
+        )
+        '''
+        )
+        return df2.collect()[0][0]
+
+    def isLargerBetter(self):
+        return False
 
 
-def compute_score(predictions_df):
-    """Look at 5% of most highly predicted restaurants for each user.
+class TopQuantileEvaluator(object):
+    """
+    Look at 5% of most highly predicted restaurants for each user.
     Return the average actual rating of those restaurants.
     """
-    # for each user
-    g = predictions_df.groupBy('user')
+    def __init__(self):
+        pass
 
-    # detect the top_5 restaurants as predicted by your algorithm
-    top_5 = g['prediction'].transform(
-        lambda x: x >= x.quantile(0.95)
-    )
+    def evaluate(self, predictions_df):
+        predictions_df.registerTempTable("predictions_df")
+        df2 = spark.sql(
+            '''
+            select
+                5.0 - avg(p.rating) as score
+            from predictions_df p
+            join (
+                select
+                    user,
+                    percentile_approx(prediction, 0.95) as 95_percentile
+                from predictions_df
+                group by user
+            ) x on p.user = x.user and p.prediction >= x.95_percentile
+            '''
+        )
+        return df2.collect()[0][0]
 
-    # return the mean of the actual score on those
-    return predictions_df['rating'][top_5].mean()
+    def isLargerBetter(self):
+        return False
 
 
 def cv_grid_search(train_df, test_df):
     estimator = Recommender(
         useALS=True,
         useBias=True,
-        lambda_1=5,
-        lambda_2=8,
+        lambda_1=10,
+        lambda_2=15,
         userCol='user',
         itemCol='item',
         ratingCol='rating',
-        rank=10,
-        regParam=0.25,
+        rank=64,
+        regParam=1,
         maxIter=10,
         nonnegative=True
     )
 
     paramGrid = (
         ParamGridBuilder()
-        .addGrid(estimator.lambda_1, [1, 2, 4, 8, 16])
-        .addGrid(estimator.lambda_2, [1, 2, 4, 8, 16])
-        # .addGrid(estimator.rank, [8, 16, 32])
-        # .addGrid(estimator.regParam, [0.1, 0.2, 0.3])
-        # .addGrid(estimator.maxIter, [2, 3, 4])
+        # .addGrid(estimator.lambda_1, [5, 10, 15, 20, 25])
+        # .addGrid(estimator.lambda_2, [5, 10, 15, 20, 25])
+        .addGrid(estimator.rank, [1, 8, 16, 32, 64, 128])
+        # .addGrid(estimator.regParam, [0.001, 0.0025, 0.005, 0.00625, 0.0075, 0.00875])
+        .addGrid(estimator.regParam, [0.005, 0.01, 0.1, 0.5, 1.0])
+        # .addGrid(estimator.maxIter, [15, 30, 45])
         # .addGrid(estimator.nonnegative, [True, False])
         .build()
     )
 
-    evaluator = RegressionEvaluator(
-        metricName="rmse", labelCol="rating", predictionCol="prediction")
+    # evaluator = RegressionEvaluator(
+    #     metricName="rmse", labelCol="rating", predictionCol="prediction")
+
+    # evaluator = TopQuantileEvaluator()
+
+    evaluator = NDCGEvaluator()
 
     cv = CrossValidator(
         estimator=estimator,
@@ -73,7 +138,6 @@ def cv_grid_search(train_df, test_df):
     cvModel = cv.fit(train_df)
     print('Crossval done in {} seconds.'
         .format(time.monotonic() - step_start_time))
-
 
     paramMaps = cv.getEstimatorParamMaps()
     avgMetrics = cvModel.avgMetrics
@@ -89,10 +153,10 @@ def cv_grid_search(train_df, test_df):
     print('Best Metric: {}'.format(avgMetrics[min_index]))
 
     rmse = evaluator.evaluate(cvModel.bestModel.transform(test_df))
-    print("Test RMSE: {}".format(rmse))
+    print("Test Metric: {}".format(rmse))
 
 
-def get_baseline_scores(train_df, val_df, evaluator, lambda_1, lambda_2):
+def get_baseline_scores(train_df, val_df, evaluator, eval_name, lambda_1, lambda_2):
     avg_rating_df = (
         train_df
         .agg(
@@ -100,34 +164,42 @@ def get_baseline_scores(train_df, val_df, evaluator, lambda_1, lambda_2):
         )
     )
 
-    # Naive model: Just use average rating.
+    # Naive model: random normal rating centered on average rating.
     train_predict_df = (
         train_df
         .crossJoin(avg_rating_df)
+        .withColumn(
+            'prediction',
+            F.col('avg_rating') + F.randn()
+        )
         .select(
             'user',
             'item',
             'rating',
-            F.col('avg_rating').alias('prediction')
+            'prediction'
         )
     )
 
     val_predict_df = (
         val_df
         .crossJoin(avg_rating_df)
+        .withColumn(
+            'prediction',
+            F.col('avg_rating') + F.randn()
+        )
         .select(
             'user',
             'item',
             'rating',
-            F.col('avg_rating').alias('prediction')
+            'prediction'
         )
     )
 
     naive_score_train = evaluator.evaluate(train_predict_df)
     naive_score_val = evaluator.evaluate(val_predict_df)
 
-    print('Train Naive RMSE score: {}'.format(naive_score_train))
-    print('Validation Naive RMSE score: {}'.format(naive_score_val))
+    print('Train Naive {} score: {}'.format(eval_name, naive_score_train))
+    print('Validation Naive {} score: {}'.format(eval_name, naive_score_val))
 
     estimator = Recommender(
         lambda_1=lambda_1,
@@ -142,8 +214,8 @@ def get_baseline_scores(train_df, val_df, evaluator, lambda_1, lambda_2):
     baseline_score_train = evaluator.evaluate(model.transform(train_df))
     baseline_score_val = evaluator.evaluate(model.transform(val_df))
 
-    print('Train Baseline RMSE score: {}'.format(baseline_score_train))
-    print('Validation Baseline RMSE score: {}'.format(baseline_score_val))
+    print('Train Baseline {} score: {}'.format(eval_name, baseline_score_train))
+    print('Validation Baseline {} score: {}'.format(eval_name, baseline_score_val))
 
     return (
         naive_score_train, naive_score_val,
@@ -153,13 +225,24 @@ def get_baseline_scores(train_df, val_df, evaluator, lambda_1, lambda_2):
 
 def plot_scores(train_df):
 
-    best_rank_so_far = 4
-    best_regParam_so_far = 0.25
-    lambda_1 = 5
-    lambda_2 = 8
+    best_rank_so_far = 64
+    best_regParam_so_far = 1
+    lambda_1 = 10
+    lambda_2 = 15
     nonnegative=True
     maxIter = 10
     useBias = True
+    implicitPrefs = False
+
+    eval_name = 'NDCG'
+    evaluator = NDCGEvaluator()
+
+    # eval_name = 'TopQuantileEvaluator'
+    # evaluator = TopQuantileEvaluator()
+
+    # eval_name = 'RMSE'
+    # evaluator = RegressionEvaluator(
+    #     metricName="rmse", labelCol="rating", predictionCol="prediction")    
 
     print()
     print('best_rank_so_far: {}'.format(best_rank_so_far))
@@ -169,6 +252,8 @@ def plot_scores(train_df):
     print('nonnegative: {}'.format(nonnegative))
     print('maxIter: {}'.format(maxIter))
     print('useBias: {}'.format(useBias))
+    print('implicitPrefs: {}'.format(implicitPrefs))
+    print('eval_name: {}'.format(eval_name))
     print()
 
     train_df, val_df = train_df.randomSplit(weights=[0.75, 0.25])
@@ -176,14 +261,13 @@ def plot_scores(train_df):
     print_counts(train_df, 'plot_scores Train')
     print_counts(val_df, 'plot_scores Validation')
 
-    evaluator = RegressionEvaluator(
-        metricName="rmse", labelCol="rating", predictionCol="prediction")
 
     # First get baseline scores with ALS turned off
     (   naive_score_train, naive_score_val,
         baseline_score_train, baseline_score_val
     ) = (
-        get_baseline_scores(train_df, val_df, evaluator, lambda_1, lambda_2)
+        get_baseline_scores(
+            train_df, val_df, evaluator, eval_name, 5, 8)
     )
     
     ranks = [1, 2, 4, 8, 16, 32, 64, 128]
@@ -206,7 +290,8 @@ def plot_scores(train_df):
             rank=rank,
             regParam=best_regParam_so_far,
             maxIter=maxIter,
-            nonnegative=nonnegative
+            nonnegative=nonnegative,
+            implicitPrefs=implicitPrefs
         )
 
         model = estimator.fit(train_df)
@@ -214,7 +299,7 @@ def plot_scores(train_df):
         rank_scores_train.append(evaluator.evaluate(model.transform(train_df)))
         rank_scores_val.append(evaluator.evaluate(model.transform(val_df)))
 
-        print('rank: {} train RMSE: {} val RMSE: {}'
+        print('rank: {} train score: {} val score: {}'
             .format(
                 rank,
                 rank_scores_train[-1],
@@ -240,18 +325,18 @@ def plot_scores(train_df):
 
     print('Ranks:')
     print(ranks)
-    print('Train RMSE:')
+    print('Train score:')
     print(rank_scores_train)
-    print('Validation RMSE:')
+    print('Validation score:')
     print(rank_scores_val)
-    print('Train RMSE - Baseline:')
+    print('Train score - Baseline:')
     print(rank_scores_train - baseline_score_train)
-    print('Validation RMSE - baseline:')
+    print('Validation score - baseline:')
     print(rank_scores_val - baseline_score_val)
     print('Best Rank: {}'.format(ranks[best_rank_index]))
 
 
-    regParams = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4]
+    regParams = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
     regParam_scores_train = []
     regParam_scores_val =[]
 
@@ -271,7 +356,8 @@ def plot_scores(train_df):
             rank=best_rank_so_far,
             regParam=regParam,
             maxIter=maxIter,
-            nonnegative=nonnegative
+            nonnegative=nonnegative,
+            implicitPrefs=implicitPrefs
         )
 
         model = estimator.fit(train_df)
@@ -281,7 +367,7 @@ def plot_scores(train_df):
         regParam_scores_val.append(
             evaluator.evaluate(model.transform(val_df)))
 
-        print('regParam: {} train RMSE: {} val RMSE: {}'
+        print('regParam: {} train score: {} val score: {}'
             .format(
                 regParam,
                 regParam_scores_train[-1],
@@ -308,13 +394,13 @@ def plot_scores(train_df):
 
     print('RegParams:')
     print(regParams)
-    print('Train RMSE:')
+    print('Train score:')
     print(regParam_scores_train)
-    print('Validation RMSE:')
+    print('Validation score:')
     print(regParam_scores_val)
-    print('Train RMSE - Baseline:')
+    print('Train score - Baseline:')
     print(regParam_scores_train - baseline_score_train)
-    print('Validation RMSE - Baseline:')
+    print('Validation score - Baseline:')
     print(regParam_scores_val - baseline_score_val)
     print('Best RegParam: {}'.format(regParams[best_regParam_index]))
 
@@ -335,10 +421,10 @@ def plot_scores(train_df):
     flat_axes[0].plot(ranks, rank_scores_val, label='Validation Model', alpha=0.5)
 
 
-    flat_axes[0].set_title('RMSE vs. Rank (regParam={})'
-        .format(best_regParam_so_far))
+    flat_axes[0].set_title('{} vs. Rank (regParam={})'
+        .format(eval_name, best_regParam_so_far))
     flat_axes[0].set_xlabel('Rank')
-    flat_axes[0].set_ylabel('RMSE')
+    flat_axes[0].set_ylabel(eval_name)
     flat_axes[0].legend()
 
     flat_axes[1].axhline(y=naive_score_train, label='Train Naive', 
@@ -354,30 +440,30 @@ def plot_scores(train_df):
     flat_axes[1].plot(regParams, regParam_scores_val, label='Validation Model',
         alpha=0.5)
 
-    flat_axes[1].set_title('RMSE vs. regParam (Rank={})'
-        .format(best_rank_so_far))
+    flat_axes[1].set_title('{} vs. regParam (Rank={})'
+        .format(eval_name, best_rank_so_far))
     flat_axes[1].set_xlabel('regParam')
-    flat_axes[1].set_ylabel('RMSE')
+    flat_axes[1].set_ylabel(eval_name)
     flat_axes[1].legend()
 
     flat_axes[2].plot(ranks, rank_scores_train - baseline_score_train,
         label='Train Diff', alpha=0.5)
     flat_axes[2].plot(ranks, rank_scores_val - baseline_score_val,
         label='Validation Diff', alpha=0.5)
-    flat_axes[2].set_title('RMSE - Baseline vs. Rank (regParam={})'
-        .format(best_regParam_so_far))
+    flat_axes[2].set_title('{} - Baseline vs. Rank (regParam={})'
+        .format(eval_name, best_regParam_so_far))
     flat_axes[2].set_xlabel('Rank')
-    flat_axes[2].set_ylabel('RMSE')
+    flat_axes[2].set_ylabel(eval_name)
     flat_axes[2].legend()
 
     flat_axes[3].plot(regParams, regParam_scores_train - baseline_score_train,
         label='Train Diff', alpha=0.5)
     flat_axes[3].plot(regParams, regParam_scores_val - baseline_score_val,
         label='Validation Diff', alpha=0.5)
-    flat_axes[3].set_title('RMSE - Baseline vs. regParam (Rank={})'
-        .format(best_rank_so_far))
+    flat_axes[3].set_title('{} - Baseline vs. regParam (Rank={})'
+        .format(eval_name, best_rank_so_far))
     flat_axes[3].set_xlabel('regParam')
-    flat_axes[3].set_ylabel('RMSE')
+    flat_axes[3].set_ylabel(eval_name)
     flat_axes[3].legend()
 
     plt.tight_layout()
@@ -428,7 +514,6 @@ def eval_model(train_df, test_df):
 
 
 def print_counts(ratings_df, label):
-    return
     print('[{}] Num total ratings: {}'
         .format(label, ratings_df.count()))
     print('[{}] Num users: {}'
@@ -442,12 +527,6 @@ def print_counts(ratings_df, label):
 
 
 def main():
-    spark = (
-        ps.sql.SparkSession.builder
-        .master("local[8]")
-        .appName("eval_model")
-        .getOrCreate()
-    )
 
     # Load restaurant reviews
     ratings_df = spark.read.parquet('../data/ratings_ugt10_igt10')
