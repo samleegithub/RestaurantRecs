@@ -6,23 +6,6 @@ import pyspark as ps
 app = Flask(__name__)
 PORT = 5353
 
-with open('../data/item_factors.pkl', 'rb') as f:
-    item_factors = pickle.load(f)
-
-with open('../data/item_ids.pkl', 'rb') as f:
-    item_ids = pickle.load(f)
-
-spark = (
-    ps.sql.SparkSession.builder
-    # .master("local[8]")
-    .appName("webapp")
-    .getOrCreate()
-)
-
-# Load restaurant metadata
-restaurants_df = spark.read.parquet('../data/restaurants')
-
-
 @app.route('/recommend', methods=['POST', 'GET'])
 def recommend():
     json_doc = request.json
@@ -41,6 +24,22 @@ def index():
 
 
 def main():
+    with open('../data/item_factors.pkl', 'rb') as f:
+        item_factors = pickle.load(f)
+
+    with open('../data/item_ids.pkl', 'rb') as f:
+        item_ids = pickle.load(f)
+
+    spark = (
+        ps.sql.SparkSession.builder
+        # .master("local[8]")
+        .appName("webapp")
+        .getOrCreate()
+    )
+
+    # Load restaurant metadata
+    restaurants_df = spark.read.parquet('../data/restaurants')
+    
     # Start Flask app
     app.run(host='0.0.0.0', port=PORT, debug=True)
 

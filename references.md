@@ -1,7 +1,5 @@
 Recommender Systems:
 http://www.netflixprize.com/assets/GrandPrize2009_BPC_BellKor.pdf
-
-
 https://docs.google.com/presentation/d/1YMPJGo62hRPDz1iXQK2fITJAFOJn6H3oPD5vsrMwA1c/edit#slide=id.g9ee6c821b_9_53
 https://code.facebook.com/posts/861999383875667/recommending-items-to-more-than-a-billion-people/
 http://infolab.stanford.edu/~ullman/mmds/ch9.pdf
