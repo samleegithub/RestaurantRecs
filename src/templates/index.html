@@ -25,6 +25,14 @@
     <!-- Theme CSS -->
     <link href="{{ url_for('static', filename='css/creative.min.css') }}" rel="stylesheet">
 
+    <!-- bootstrap-rating-input CSS -->
+    <link href="{{ url_for('static', filename='vendor/bootstrap-rating-input/bootstrap-rating-input.css') }}" rel="stylesheet">
+
+    <!-- bootstrap-star-rating CSS -->
+    <!-- <link href="{{ url_for('static', filename='vendor/bootstrap-star-rating/css/star-rating.min.css') }}" media="all" rel="stylesheet" type="text/css" />
+    <link href="{{ url_for('static', filename='vendor/bootstrap-star-rating/themes/krajee-fa/theme.min.css') }}" media="all" rel="stylesheet" type="text/css" />
+ -->
+   <!--  <script async="" src="https://s3-media2.fl.yelpcdn.com/assets/srv0/svg_icons/10f9148f7c97/assets/svg_sprite.js?callback=window.yelp.__injectSvgSpritesheet"></script> -->
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -85,40 +93,17 @@
                     <h2 class="section-heading">Rate Restaurants</h2>
                     <hr class="light">
                     <p class="text-faded">Start rating restaurants and we'll recommend new ones to try</p>
-                    <div class="rating-and-comment pseudo-input">
-                        <div class="arrange arrange--middle">
-                            <div class="arrange_unit arrange_unit--fill">
-                                <div class="clearfix">
-                                    <fieldset class="star-selector js-star-selector" data-original-rating="0" data-component-bound="true">
-                                        <legend class="star-selector_legend offscreen">Rating</legend>
-                                        <ul class="star-selector_stars i-selector-stars i-selector-stars--extra-large-0 js-star-selector_stars">
-                                            <li class="star-selector_star js-star-selector_star show-tooltip" data-label="Eek! Methinks not.">
-                                                <input class="star-selector_input js-star-selector_input" id="rating-1" name="rating" type="radio" value="1">
-                                                <label class="star-selector_label" for="rating-1">1 (Eek! Methinks not.)</label>
-                                            </li>
-                                            <li class="star-selector_star js-star-selector_star show-tooltip" data-label="Meh. I've experienced better.">
-                                                <input class="star-selector_input js-star-selector_input" id="rating-2" name="rating" type="radio" value="2">
-                                                <label class="star-selector_label" for="rating-2">2 (Meh. I've experienced better.)</label>
-                                            </li>
-                                            <li class="star-selector_star js-star-selector_star show-tooltip" data-label="A-OK.">
-                                                <input class="star-selector_input js-star-selector_input" id="rating-3" name="rating" type="radio" value="3">
-                                                <label class="star-selector_label" for="rating-3">3 (A-OK.)</label>
-                                            </li>
-                                            <li class="star-selector_star js-star-selector_star show-tooltip" data-label="Yay! I'm a fan.">
-                                                <input class="star-selector_input js-star-selector_input" id="rating-4" name="rating" type="radio" value="4">
-                                                <label class="star-selector_label" for="rating-4">4 (Yay! I'm a fan.)</label>
-                                            </li>
-                                            <li class="star-selector_star js-star-selector_star show-tooltip star-selector_star--last" data-label="Woohoo! As good as it gets!">
-                                                <input class="star-selector_input js-star-selector_input" id="rating-5" name="rating" type="radio" value="5">
-                                                <label class="star-selector_label" for="rating-5">5 (Woohoo! As good as it gets!)</label>
-                                            </li>
-                                        </ul>
-                                        <p class="star-selector_description js-star-selector_description">Select your rating.</p>
-                                    </fieldset>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="input-group custom-search-form">
+                        <input type="text" class="form-control" placeholder="Search..." data-cip-id="cIPJQ342845639">
+                        <span class="input-group-btn">
+                        <button class="btn btn-default" type="button">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </span>
                     </div>
+                    <p class="text-faded">
+                        <input type="number" name="your_awesome_parameter" id="some_id" class="rating" data-clearable="" data-icon-lib="fa" data-active-icon="fa-star" data-inactive-icon="fa-star-o" data-clearable-icon="fa-trash-o"/>
+                    </p>
                     <a href="#rate" class="page-scroll btn btn-default btn-xl sr-button">Submit Ratings!</a>
                 </div>
             </div>
@@ -306,6 +291,8 @@
 
     <!-- jQuery -->
     <script src="{{ url_for('static', filename='vendor/jquery/jquery.min.js') }}"></script>
+    <!-- <script src="http://code.jquery.com/jquery-migrate-1.4.1.js"></script> -->
+    <!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script> -->
 
     <!-- Bootstrap Core JavaScript -->
     <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.min.js') }}"></script>
@@ -317,8 +304,14 @@
 
     <!-- Theme JavaScript -->
     <script src="{{ url_for('static', filename='js/creative.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/yelp-js-packages.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/module_writeareview.js') }}"></script>
+
+    <!-- bootstrap rating input -->
+    <script src="{{ url_for('static', filename='vendor/bootstrap-rating-input/bootstrap-rating-input.min.js') }}"></script>
+
+    <!-- bootstrap star rating -->
+    <!-- <script src="{{ url_for('static', filename='vendor/bootstrap-star-rating/js/star-rating.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/bootstrap-star-rating/themes/krajee-fa/theme.min.js') }}"></script> -->
+
 
 </body>
 
