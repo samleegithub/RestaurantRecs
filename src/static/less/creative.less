@@ -479,3 +479,71 @@ textarea.form-control {
 input[type=search] {
     -webkit-appearance: none
 }
+
+.search-result-row a,
+.search-result-row .address {
+    vertical-align: middle;
+}
+
+.search-result-row a {
+    &:hover,
+    &:focus {
+        color: white;
+    }
+}
+
+.search-result-row .address {
+    white-space: nowrap;
+}
+
+.search-result-row img {
+    width: 100px;
+    height: 75px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.cell {
+    text-align: center;
+}
+
+.results-image-div {
+    height: 75px;
+}
+
+.rating-input {
+    width: 76px;
+    height: 21px;
+    display: inline-block;
+}
+
+.rating-input,
+.rating-input a {
+    color: #FF0000;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.rating-input :hover,
+.rating-input :focus {
+    color: #FF6666;
+}
+
+.vcenter {
+    display: inline-block;
+    vertical-align: middle;
+    float: none;
+}
+
+#search-results {
+    max-height: 600px;
+    align: center;
+    overflow: auto;
+}   
+
+#search-results .search-result-row:nth-child(even){
+    background-color: darken(@theme-primary, 10%);
+}
+#search-results .search-result-row:nth-child(odd){
+    background-color: @theme-primary;
+}

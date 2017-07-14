@@ -1,3 +1,6 @@
+var $searchLoading = $('#searchLoading').hide();
+var $selectedRatingsGroup = $('#selectedRatingsGroup').hide();
+
 // Attach a submit handler to the form
 $( "#searchForm" ).submit(function( event ) {
  
@@ -10,6 +13,9 @@ $( "#searchForm" ).submit(function( event ) {
     location = $form.find("input[name='location']").val(),
     url = $form.attr("action" );
  
+  $('#search-results').empty()
+  $searchLoading.show()
+
   // Send the data using post
   var posting = $.post( url, { keyword: keyword, location: location }, dataType='json' );
  
@@ -18,27 +24,33 @@ $( "#searchForm" ).submit(function( event ) {
     var content = $( data );
     console.log(content)
 
-    $('#results').empty()
+    $searchLoading.hide()
+    
     $.each(data, function(k, v) {
       html = (
-        '<div class="row search-result">'+
-          '<div class="col-xs-2 vcenter"><img src="'+v.image_url+'"></div>'+
-          '<div class="col-xs-4 vcenter"><a href="'+v.url+'" target="_blank">'+v.name+'</a></div>' +
-          '<div class="col-xs-5 vcenter">'
+        '<div class="row search-result-row">'+
+          '<div class="col-xs-12 col-sm-2 vcenter cell results-image-div">'
+      );
+      if (typeof v.image_url != 'undefined' && v.image_url != '')
+          html += '<img src="'+v.image_url+'" />'
+      html += (
+          '</div>' +
+          '<div class="col-xs-12 col-sm-4 vcenter cell"><a href="'+v.url+'" class="text-faded" target="_blank">'+v.name+'</a></div>' +
+          '<div class="col-xs-12 col-sm-4 vcenter cell">'
       );
       $.each(v.location[5], function(i, loc_val) {
-        html += '<div class="address">'+loc_val+'</div>'
+        html += '<div class="address text-faded">'+loc_val+'</div>'
       });
       html += (
           '</div>'+
-          '<div class="col-xs-1 vcenter">'+
+          '<div class="col-xs-12 col-sm-2 vcenter cell">'+
             '<input type="number" id="'+k+'" class="rating rating-input" data-clearable="" '+
             'data-icon-lib="fa" data-active-icon="fa-star" data-inactive-icon="fa-star-o" '+
-            'data-clearable-icon="fa-trash-o" />'+
+            'data-clearable-icon="fa-trash-o" data-inline />'+
           '</div>'+
         '</div>'
       );
-      $('#results').append(html)
+      $('#search-results').append(html)
     });
     $('input.rating').rating({});
   });
