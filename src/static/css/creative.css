@@ -462,6 +462,9 @@ output {
   line-height: 1.42857143;
   color: #555;
 }
+form {
+  width: 100%;
+}
 .form-control {
   display: block;
   width: 100%;
@@ -479,6 +482,10 @@ output {
   -webkit-transition: border-color ease-in-out 0.15s, -webkit-box-shadow ease-in-out 0.15s;
   -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
   transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
+}
+.input-group .form-control-inline {
+  display: inline;
+  width: 50%;
 }
 .form-control:focus {
   border-color: #66afe9;

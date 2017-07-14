@@ -1,7 +1,9 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
 import pickle
 import numpy as np
 import pyspark as ps
+import pyspark.sql.functions as F
+import pyspark.sql.types as T
 
 app = Flask(__name__)
 PORT = 5353
@@ -21,6 +23,50 @@ spark = (
 
 # Load restaurant metadata
 restaurants_df = spark.read.parquet('../data/restaurants')
+
+
+def find_str_in_categories(categories, keyword):
+    for row in categories:
+            if keyword in row['alias'].lower():
+                return True
+    return False
+
+
+find_str_in_categories_udf = F.udf(find_str_in_categories, T.BooleanType())
+
+
+@app.route('/search', methods=['POST'])
+def search():
+    keyword = str(request.form['keyword']).lower()
+    location = str(request.form['location']).lower()
+    print(keyword, location)
+    data = restaurants_df.filter(
+        (
+            F.lower(F.col('name')).like('%{}%'.format(keyword))
+            | find_str_in_categories_udf(F.col('categories'), F.lit(keyword))
+        )
+        & (
+            F.lower(F.col('location.city')).like('%{}%'.format(location))
+            | F.lower(F.col('location.zip_code')).like('%{}%'.format(location))
+            | F.lower(F.col('location.state')).like('%{}%'.format(location))
+        )
+    ).collect()
+    results = {}
+
+    for row in data:
+        results[row['id']] = {
+            'name': row['name'],
+            'url': row['url'],
+            'image_url': row['image_url'],
+            'location': row['location'],
+            'rating': row['rating'],
+            'categories': row['categories']
+        }
+
+    restaurants_df.printSchema()
+
+    # restaurants_df.printSchema()
+    return jsonify(results)
 
 
 @app.route('/recommend', methods=['POST', 'GET'])

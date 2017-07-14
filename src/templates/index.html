@@ -22,11 +22,13 @@
     <!-- Plugin CSS -->
     <link href="{{ url_for('static', filename='vendor/magnific-popup/magnific-popup.css') }}" rel="stylesheet">
 
-    <!-- Theme CSS -->
-    <link href="{{ url_for('static', filename='css/creative.min.css') }}" rel="stylesheet">
 
     <!-- bootstrap-rating-input CSS -->
     <link href="{{ url_for('static', filename='vendor/bootstrap-rating-input/bootstrap-rating-input.css') }}" rel="stylesheet">
+
+    <!-- Theme CSS -->
+    <link href="{{ url_for('static', filename='css/creative.min.css') }}" rel="stylesheet">
+
 
     <!-- bootstrap-star-rating CSS -->
     <!-- <link href="{{ url_for('static', filename='vendor/bootstrap-star-rating/css/star-rating.min.css') }}" media="all" rel="stylesheet" type="text/css" />
@@ -93,14 +95,19 @@
                     <h2 class="section-heading">Rate Restaurants</h2>
                     <hr class="light">
                     <p class="text-faded">Start rating restaurants and we'll recommend new ones to try</p>
-                    <div class="input-group custom-search-form">
-                        <input type="text" class="form-control" placeholder="Search..." data-cip-id="cIPJQ342845639">
-                        <span class="input-group-btn">
-                        <button class="btn btn-default" type="button">
-                            <i class="fa fa-search"></i>
-                        </button>
-                    </span>
-                    </div>
+                    <form action="/search" method='POST' >
+                        <div class="input-group">      
+                            <input type="text" class="form-control form-control-inline" style="{display:inline}" placeholder="Keyword..." name="keyword" >
+                            <!-- <span class="input-group-addon"></span> -->
+                            <input type="text" class="form-control form-control-inline"  style="{display:inline}" placeholder="Location..." name="location" >
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="submit" action="/search">
+                                    <i class="fa fa-search"></i>
+                                </button>
+                            </span>
+           
+                        </div>
+                    </form>
                     <p class="text-faded">
                         <input type="number" name="your_awesome_parameter" id="some_id" class="rating" data-clearable="" data-icon-lib="fa" data-active-icon="fa-star" data-inactive-icon="fa-star-o" data-clearable-icon="fa-trash-o"/>
                     </p>
