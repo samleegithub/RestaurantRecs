@@ -1,0 +1,32 @@
+.search-result {
+  white-space: nowrap;
+}
+
+.search-result a,
+.search-result .address {
+  vertical-align: middle;
+  color: white;
+}
+
+.search-result img {
+  width: 100px;
+  height: 75px;
+  vertical-align: middle;
+}
+
+.rating-input,
+.rating-input a {
+  color: #FF0000;
+  text-align: left;
+}
+
+.rating-input :hover,
+.rating-input :focus {
+  color: #FF6666;
+}
+
+.vcenter {
+    display: inline-block;
+    vertical-align: middle;
+    float: none;
+}

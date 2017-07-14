@@ -39,7 +39,7 @@ find_str_in_categories_udf = F.udf(find_str_in_categories, T.BooleanType())
 def search():
     keyword = str(request.form['keyword']).lower()
     location = str(request.form['location']).lower()
-    print(keyword, location)
+    # print(keyword, location)
     data = restaurants_df.filter(
         (
             F.lower(F.col('name')).like('%{}%'.format(keyword))
@@ -47,6 +47,9 @@ def search():
         )
         & (
             F.lower(F.col('location.city')).like('%{}%'.format(location))
+            | F.lower(F.col('location.address1')).like('%{}%'.format(location))
+            | F.lower(F.col('location.address2')).like('%{}%'.format(location))
+            | F.lower(F.col('location.address3')).like('%{}%'.format(location))
             | F.lower(F.col('location.zip_code')).like('%{}%'.format(location))
             | F.lower(F.col('location.state')).like('%{}%'.format(location))
         )

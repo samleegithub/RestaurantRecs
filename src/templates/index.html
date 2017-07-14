@@ -22,12 +22,11 @@
     <!-- Plugin CSS -->
     <link href="{{ url_for('static', filename='vendor/magnific-popup/magnific-popup.css') }}" rel="stylesheet">
 
-
-    <!-- bootstrap-rating-input CSS -->
-    <link href="{{ url_for('static', filename='vendor/bootstrap-rating-input/bootstrap-rating-input.css') }}" rel="stylesheet">
-
     <!-- Theme CSS -->
     <link href="{{ url_for('static', filename='css/creative.min.css') }}" rel="stylesheet">
+
+    <!-- app CSS -->
+    <link href="{{ url_for('static', filename='css/app.css') }}" rel="stylesheet">
 
 
     <!-- bootstrap-star-rating CSS -->
@@ -95,22 +94,19 @@
                     <h2 class="section-heading">Rate Restaurants</h2>
                     <hr class="light">
                     <p class="text-faded">Start rating restaurants and we'll recommend new ones to try</p>
-                    <form action="/search" method='POST' >
+                    <form action="/search" id="searchForm">
                         <div class="input-group">      
-                            <input type="text" class="form-control form-control-inline" style="{display:inline}" placeholder="Keyword..." name="keyword" >
-                            <!-- <span class="input-group-addon"></span> -->
-                            <input type="text" class="form-control form-control-inline"  style="{display:inline}" placeholder="Location..." name="location" >
+                            <input type="text" class="form-control form-control-inline" placeholder="Keyword..." name="keyword">
+                            <input type="text" class="form-control form-control-inline" placeholder="Location..." name="location">
                             <span class="input-group-btn">
-                                <button class="btn btn-default" type="submit" action="/search">
+                                <button class="btn btn-default" type="submit">
                                     <i class="fa fa-search"></i>
                                 </button>
                             </span>
-           
                         </div>
                     </form>
-                    <p class="text-faded">
-                        <input type="number" name="your_awesome_parameter" id="some_id" class="rating" data-clearable="" data-icon-lib="fa" data-active-icon="fa-star" data-inactive-icon="fa-star-o" data-clearable-icon="fa-trash-o"/>
-                    </p>
+                    <!-- the result of the search will be rendered inside this div -->
+                    <div id="results"></div>
                     <a href="#rate" class="page-scroll btn btn-default btn-xl sr-button">Submit Ratings!</a>
                 </div>
             </div>
@@ -318,6 +314,9 @@
     <!-- bootstrap star rating -->
     <!-- <script src="{{ url_for('static', filename='vendor/bootstrap-star-rating/js/star-rating.min.js') }}"></script>
     <script src="{{ url_for('static', filename='vendor/bootstrap-star-rating/themes/krajee-fa/theme.min.js') }}"></script> -->
+
+    <!-- app scripts -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 
 
 </body>
