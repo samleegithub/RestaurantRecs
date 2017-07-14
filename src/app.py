@@ -24,6 +24,12 @@ spark = (
 # Load restaurant metadata
 restaurants_df = spark.read.parquet('../data/restaurants')
 
+# Load restaurant ids
+with open('../data/product_labels.txt') as f:
+    restaurant_ids = [line.strip() for line in f]
+
+print(restaurant_ids[:10])
+
 
 def find_str_in_categories(categories, keyword):
     for row in categories:
@@ -72,7 +78,7 @@ def search():
     return jsonify(results)
 
 
-@app.route('/recommend', methods=['POST', 'GET'])
+@app.route('/recommend', methods=['POST'])
 def recommend():
     json_doc = request.json
 

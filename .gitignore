@@ -7,8 +7,6 @@ data/ratings_*/
 data/restaurants.json
 data/restaurants_by_state.json
 data/ratings.json
-data/product_labels.txt
-data/user_labels.txt
 
 .DS_Store
 .ipynb_checkpoints/
