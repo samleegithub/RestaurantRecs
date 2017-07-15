@@ -480,12 +480,13 @@ input[type=search] {
     -webkit-appearance: none
 }
 
-.search-result-row a,
-.search-result-row .address {
+.address {
     vertical-align: middle;
 }
 
-.search-result-row a {
+.restaurant-name-link {
+    vertical-align: middle;
+    color: fade(white, 70%);
     &:hover,
     &:focus {
         color: white;
@@ -518,7 +519,7 @@ input[type=search] {
 }
 
 .rating-input,
-.rating-input a {
+.rating-clear {
     color: #FF0000;
     text-align: left;
     white-space: nowrap;

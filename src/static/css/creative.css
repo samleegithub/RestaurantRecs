@@ -523,12 +523,15 @@ textarea.form-control {
 input[type=search] {
   -webkit-appearance: none;
 }
-.search-result-row a,
-.search-result-row .address {
+.address {
   vertical-align: middle;
 }
-.search-result-row a:hover,
-.search-result-row a:focus {
+.restaurant-name-link {
+  vertical-align: middle;
+  color: rgba(255, 255, 255, 0.7);
+}
+.restaurant-name-link:hover,
+.restaurant-name-link:focus {
   color: white;
 }
 .search-result-row .address {
@@ -552,7 +555,7 @@ input[type=search] {
   display: inline-block;
 }
 .rating-input,
-.rating-input a {
+.rating-clear {
   color: #FF0000;
   text-align: left;
   white-space: nowrap;

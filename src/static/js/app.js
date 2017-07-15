@@ -35,7 +35,7 @@ $( "#searchForm" ).submit(function( event ) {
           html += '<img src="'+v.image_url+'" />'
       html += (
           '</div>' +
-          '<div class="col-xs-12 col-sm-4 vcenter cell"><a href="'+v.url+'" class="text-faded" target="_blank">'+v.name+'</a></div>' +
+          '<div class="col-xs-12 col-sm-4 vcenter cell"><a href="'+v.url+'" class="restaurant-name-link" target="_blank">'+v.name+'</a></div>' +
           '<div class="col-xs-12 col-sm-4 vcenter cell">'
       );
       $.each(v.location[5], function(i, loc_val) {
