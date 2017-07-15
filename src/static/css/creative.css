@@ -568,8 +568,8 @@ input[type=search] {
 }
 #search-results {
   max-height: 600px;
-  align: center;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 #search-results .search-result-row:nth-child(even) {
   background-color: #f09710;
