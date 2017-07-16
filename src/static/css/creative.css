@@ -45,6 +45,16 @@ p {
 .bg-primary {
   background-color: #F3AC40;
 }
+.bg-primary a {
+  -webkit-transition: all 0.35s;
+  -moz-transition: all 0.35s;
+  transition: all 0.35s;
+  color: white;
+}
+.bg-primary a:hover,
+.bg-primary a:focus {
+  color: #e6e6e6;
+}
 .bg-dark {
   background-color: #222222;
   color: white;
@@ -53,7 +63,7 @@ p {
   color: rgba(255, 255, 255, 0.7);
 }
 section {
-  padding: 100px 0;
+  padding: 50px 0;
 }
 aside {
   padding: 50px 0;
@@ -282,7 +292,7 @@ header .header-content .header-content-inner .header-content-inner-text {
 .portfolio-box:focus {
   outline: none;
 }
-@media (min-width: 100%) {
+@media (min-width: 768px) {
   .portfolio-box .portfolio-box-caption .portfolio-box-caption-content .restaurant-city {
     font-size: 16px;
   }
@@ -523,39 +533,54 @@ textarea.form-control {
 input[type=search] {
   -webkit-appearance: none;
 }
-.address {
+.cell {
+  text-align: center;
+  display: inline-block;
   vertical-align: middle;
+  float: none;
 }
-.restaurant-name-link {
-  vertical-align: middle;
-  color: rgba(255, 255, 255, 0.7);
+#search-loading {
+  padding-top: 19px;
 }
-.restaurant-name-link:hover,
-.restaurant-name-link:focus {
-  color: white;
+.search-results-img-div {
+  height: 75px;
+  text-align: center;
 }
-.search-result-row .address {
-  white-space: nowrap;
+@media (min-width: 768px) {
+  .search-results-img-div {
+    text-align: left;
+  }
 }
-.search-result-row img {
+.search-results-img {
   width: 100px;
   height: 75px;
   vertical-align: middle;
-  text-align: center;
 }
-.cell {
-  text-align: center;
-}
-.results-image-div {
+.rating-img-div {
   height: 75px;
+  text-align: center;
+}
+@media (min-width: 768px) {
+  .rating-img-div {
+    text-align: left;
+  }
+}
+.rating-img {
+  width: 100px;
+  height: 75px;
+  vertical-align: middle;
 }
 .rating-input {
   width: 76px;
   height: 21px;
   display: inline-block;
 }
-.rating-input,
-.rating-clear {
+.rating-input {
+  color: #FF0000;
+  text-align: left;
+  white-space: nowrap;
+}
+a.rating-clear {
   color: #FF0000;
   text-align: left;
   white-space: nowrap;
@@ -563,11 +588,6 @@ input[type=search] {
 .rating-input :hover,
 .rating-input :focus {
   color: #FF6666;
-}
-.vcenter {
-  display: inline-block;
-  vertical-align: middle;
-  float: none;
 }
 #search-results {
   max-height: 600px;
@@ -579,4 +599,16 @@ input[type=search] {
 }
 #search-results .search-result-row:nth-child(odd) {
   background-color: #F3AC40;
+}
+#selected-ratings {
+  max-height: 600px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+#selected-ratings .rating-row:nth-child(even) {
+  background-color: #e6e6e6;
+}
+#selected-ratings .rating-row:nth-child(odd) {
+  background-color: white;
 }

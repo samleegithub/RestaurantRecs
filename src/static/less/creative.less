@@ -50,6 +50,15 @@ p {
     background-color: @theme-primary;
 }
 
+.bg-primary a {
+    .transition-all;
+    color: white;
+    &:hover,
+    &:focus {
+        color: darken(white, 10%);
+    }
+}
+
 .bg-dark {
     background-color: @gray-darker;
     color: white;
@@ -60,7 +69,7 @@ p {
 }
 
 section {
-    padding: 100px 0;
+    padding: 50px 0;
 }
 
 aside {
@@ -293,7 +302,7 @@ header {
     &:focus {
         outline: none;
     }
-    @media (min-width: 100%) {
+    @media (min-width: 768px) {
         .portfolio-box-caption {
             .portfolio-box-caption-content {
                 .restaurant-city {
@@ -480,36 +489,73 @@ input[type=search] {
     -webkit-appearance: none
 }
 
-.address {
+.cell {
+    text-align: center;
+    display: inline-block;
     vertical-align: middle;
+    float: none;
 }
 
-.restaurant-name-link {
-    vertical-align: middle;
-    color: fade(white, 70%);
-    &:hover,
-    &:focus {
-        color: white;
+// #search-results .address {
+//     vertical-align: middle;
+//     color: fade(white, 70%);
+//     white-space: nowrap;
+// }
+
+// #search-results .restaurant-name-link {
+//     vertical-align: middle;
+//     color: fade(white, 70%);
+//     &:hover,
+//     &:focus {
+//         color: white;
+//     }
+// }
+
+// #search-results .address {
+//     vertical-align: middle;
+//     color: fade(white, 70%);
+//     white-space: nowrap;
+// }
+
+// #search-results .restaurant-name-link {
+//     vertical-align: middle;
+//     &:hover,
+//     &:focus {
+//         color: white;
+//     }
+// }
+
+#search-loading {
+    padding-top: 19px;
+}
+
+.search-results-img-div {
+    height: 75px;
+    text-align: center;
+    @media (min-width: 768px) {
+        text-align: left;
     }
 }
 
-.search-result-row .address {
-    white-space: nowrap;
-}
-
-.search-result-row img {
+.search-results-img {
     width: 100px;
     height: 75px;
     vertical-align: middle;
-    text-align: center;
+
 }
 
-.cell {
-    text-align: center;
-}
-
-.results-image-div {
+.rating-img-div {
     height: 75px;
+    text-align: center;
+    @media (min-width: 768px) {
+        text-align: left;
+    }
+}
+
+.rating-img {
+    width: 100px;
+    height: 75px;
+    vertical-align: middle;
 }
 
 .rating-input {
@@ -518,8 +564,13 @@ input[type=search] {
     display: inline-block;
 }
 
-.rating-input,
-.rating-clear {
+.rating-input {
+    color: #FF0000;
+    text-align: left;
+    white-space: nowrap;
+}
+
+a.rating-clear {
     color: #FF0000;
     text-align: left;
     white-space: nowrap;
@@ -528,12 +579,6 @@ input[type=search] {
 .rating-input :hover,
 .rating-input :focus {
     color: #FF6666;
-}
-
-.vcenter {
-    display: inline-block;
-    vertical-align: middle;
-    float: none;
 }
 
 #search-results {
@@ -545,6 +590,22 @@ input[type=search] {
 #search-results .search-result-row:nth-child(even){
     background-color: darken(@theme-primary, 10%);
 }
+
 #search-results .search-result-row:nth-child(odd){
     background-color: @theme-primary;
+}
+
+#selected-ratings {
+    max-height: 600px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin-bottom: 20px;
+} 
+
+#selected-ratings .rating-row:nth-child(even){
+    background-color: darken(white, 10%);
+}
+
+#selected-ratings .rating-row:nth-child(odd){
+    background-color: white;
 }

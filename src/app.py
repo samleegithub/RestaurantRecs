@@ -24,11 +24,19 @@ spark = (
 # Load restaurant metadata
 restaurants_df = spark.read.parquet('../data/restaurants')
 
-# Load restaurant ids
+# Load restaurant ids into two lookup dictionaries
+get_restaurant_integer = {}
+get_restaurant_id = {}
+index = 0
 with open('../data/product_labels.txt') as f:
-    restaurant_ids = [line.strip() for line in f]
+    for line in f:
+        restaurant_id = line.strip()
+        get_restaurant_integer[restaurant_id] = index
+        get_restaurant_id[index] = restaurant_id
+        index += 1
 
-print(restaurant_ids[:10])
+print(list(get_restaurant_integer.items())[:10])
+print(list(get_restaurant_id.items())[:10])
 
 
 def find_str_in_categories(categories, keyword):
@@ -64,6 +72,7 @@ def search():
 
     for row in data:
         results[row['id']] = {
+            'model_id': get_restaurant_integer[row['id']],
             'name': row['name'],
             'url': row['url'],
             'image_url': row['image_url'],
@@ -81,6 +90,8 @@ def search():
 @app.route('/recommend', methods=['POST'])
 def recommend():
     json_doc = request.json
+
+    print(json_doc)
 
     return 'Hello world! Hoping to recommend stuff here'
 
