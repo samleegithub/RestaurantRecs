@@ -58,7 +58,8 @@ $("#searchForm").submit(function(event) {
           '</div>'+
           '<div class="col-xs-12 col-sm-2 cell">'+
             '<input type="number" class="rating search-rating" '+
-              'id="search_'+model_id+'" '
+              'id="search_'+model_id+'" '+
+              'name="search-rating" '
       )
       if (model_id in all_ratings)
         html += 'value="'+all_ratings[model_id]['rating']+'" '
@@ -109,6 +110,7 @@ function update_user_ratings() {
           '<div class="col-xs-12 col-sm-2 cell">'+
             '<input type="number" class="rating user-rating" '+
               'id="rating_'+model_id+'" '+
+              'name="user-rating" '+
               'value="'+rating+'" '+
               'data-clearable="" data-inline '+
               'data-icon-lib="fa" data-active-icon="fa-star" '+
@@ -124,21 +126,26 @@ function update_user_ratings() {
 
   $('input.user-rating').change(function() {
     // console.log('input.rating changed')
-    $('input.user-rating').each(function() {
-      var rating = $(this).val();
-      var v = $(this).data('values')
-      var model_id = v.model_id
-      if (rating in valid_rating_values) {
-        v['rating'] = rating
-        all_ratings[model_id] = v
-      } else if (model_id in all_ratings) {
-        delete all_ratings[model_id];
-      }
+
+    var rating = $(this).val();
+    var v = $(this).data('values')
+    var model_id = v.model_id
+    var $search_rating = $('#search_'+model_id)
+    if (rating in valid_rating_values) {
+      v['rating'] = rating
+      all_ratings[model_id] = v
       // update search result ratings if found
-      var $search_rating = $('#search_'+model_id)
-      console.log($search_rating[0])
-      $search_rating[0].value = rating
-    });
+      if (typeof $search_rating != 'undefined' && $search_rating != '') {
+        $search_rating.val(rating)
+        $search_rating.prev().children().first().trigger('mouseout')
+      }
+    } else if (model_id in all_ratings) {
+      delete all_ratings[model_id];
+      // update search result ratings if found
+      if (typeof $search_rating != 'undefined' && $search_rating != '') {
+        $search_rating.prev().children().last().trigger('click')
+      }
+    }
     // console.log(all_ratings)
     update_user_ratings()
   });
