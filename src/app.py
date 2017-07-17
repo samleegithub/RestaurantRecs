@@ -111,7 +111,7 @@ def search():
             'categories': row['categories']
         }
 
-    restaurants_with_id_df.printSchema()
+    # restaurants_with_id_df.printSchema()
 
     # restaurants_df.printSchema()
     return jsonify(results)

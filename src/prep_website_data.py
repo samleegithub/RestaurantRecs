@@ -11,10 +11,12 @@ spark = (
     .getOrCreate()
 )
 
-def train_and_save_model_data():
-    # Load restaurant reviews
-    ratings_df = spark.read.parquet('../data/ratings_ugt10_igt10')
 
+def load_ratings():
+    return spark.read.parquet('../data/ratings_ugt10_igt10')
+
+
+def save_discount_factor(ratings_df):
     discount_factor_df = (
         ratings_df
         .groupBy('item')
@@ -22,7 +24,7 @@ def train_and_save_model_data():
         .select(
             F.col('item'),
             F.col('count').alias('num_ratings'),
-            (1 - (1 / F.sqrt(F.col('count')))).alias('discount_factor')
+            (1 - (1 / F.col('count'))).alias('discount_factor')
         )
     )
 
@@ -32,6 +34,8 @@ def train_and_save_model_data():
         compression='gzip'
     )
 
+
+def train_and_save_model_data(ratings_df):
     lambda_1 = 7
     lambda_2 = 12
     useALS = True
@@ -85,8 +89,9 @@ def train_and_save_model_data():
 
 
 def main():
-    train_and_save_model_data()
-
+    ratings_df = load_ratings()
+    save_discount_factor(ratings_df)
+    train_and_save_model_data(ratings_df)
 
 
 if __name__ == '__main__':
