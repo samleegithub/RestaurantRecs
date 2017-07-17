@@ -8,6 +8,9 @@
   "devDependencies": {
     "bootstrap": "^3.3.7",
     "browser-sync": "^2.13.0",
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb-base": "^11.2.0",
+    "eslint-plugin-import": "^2.7.0",
     "font-awesome": "^4.6.3",
     "gulp": "^3.9.1",
     "gulp-clean-css": "^2.0.10",
