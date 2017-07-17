@@ -78,7 +78,26 @@ $('#searchForm').submit(function(event) {
       v['str_id'] = k
       $('#search_'+model_id).data('values', v)
     })
+    // Apply stars plugin
     $('input.search-rating').rating({});
+
+    // Define change function for stars to update user ratings
+    $('input.search-rating').change(function() {
+      // console.log('input.rating changed')
+      // $('input.search-rating').each(function() {
+      var rating = $(this).val();
+      var v = $(this).data('values');
+      var str_id = v['str_id'];
+      if (rating in valid_rating_values) {
+        v['rating'] = rating
+        all_ratings[str_id] = v
+      } else if (str_id in all_ratings) {
+        delete all_ratings[str_id];
+      }
+      // });
+      // console.log(all_ratings)
+      update_user_ratings()
+    })
   })
 })
 
@@ -89,8 +108,7 @@ function update_user_ratings() {
     all_ratings_keys.push(k)
   })
 
-  $.each(all_ratings_keys.sort(), function(i) {
-    var k = all_ratings_keys[i];
+  $.each(all_ratings_keys.sort(), function(i, k) {
     if (typeof k != 'undefined' && k != '') {
       var v = all_ratings[k];
       var rating = v['rating'];
@@ -179,27 +197,29 @@ function update_user_ratings() {
   }
 }
 
-$(document).ajaxComplete(function() {
-  // fire when any Ajax requests complete
-  $('input.search-rating').change(function() {
-    // console.log('input.rating changed')
-    // $('input.search-rating').each(function() {
-    var rating = $(this).val();
-    var v = $(this).data('values');
-    var str_id = v['str_id'];
-    if (rating in valid_rating_values) {
-      v['rating'] = rating
-      all_ratings[str_id] = v
-    } else if (str_id in all_ratings) {
-      delete all_ratings[str_id];
-    }
-    // });
-    // console.log(all_ratings)
-    update_user_ratings()
-  })
-})
-
 // Attach a submit handler to the form
 $('#ratingsForm').submit(function(event) {
-  $recommendationsGroup.show()
+  // Stop form from submitting normally
+  event.preventDefault()
+
+  var url = '/recommend';
+
+  console.log(all_ratings)
+
+  var user_ratings = {}
+  $.each(all_ratings, function(k, v) {
+    user_ratings[v['model_id']] = v['rating']
+  })
+
+  console.log(user_ratings)
+
+  // Send the data using post
+  var posting = $.post(url, user_ratings, dataType='json');
+
+
+  // Put the results in a div
+  posting.done(function(data) {
+    console.log(data)
+    $recommendationsGroup.show()
+  })
 })

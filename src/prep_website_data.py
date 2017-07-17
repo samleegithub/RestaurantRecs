@@ -58,6 +58,24 @@ def train_and_save_model_data():
     with open('../data/item_ids.pkl', 'wb') as f:
         pickle.dump(item_ids, f)
 
+    model.avg_rating_df.write.parquet(
+        path='../data/avg_rating',
+        mode='overwrite',
+        compression='gzip'
+    )
+
+    model.user_bias_df.write.parquet(
+        path='../data/user_bias',
+        mode='overwrite',
+        compression='gzip'
+    )
+
+    model.item_bias_df.write.parquet(
+        path='../data/item_bias',
+        mode='overwrite',
+        compression='gzip'
+    )
+
 
 def main():
     train_and_save_model_data()

@@ -35,9 +35,6 @@ with open('../data/product_labels.txt') as f:
         get_restaurant_id[index] = restaurant_id
         index += 1
 
-print(list(get_restaurant_integer.items())[:10])
-print(list(get_restaurant_id.items())[:10])
-
 
 def find_str_in_categories(categories, keyword):
     for row in categories:
@@ -89,17 +86,11 @@ def search():
 
 @app.route('/recommend', methods=['POST'])
 def recommend():
-    json_doc = request.json
+    form_data = request.form
 
-    print(json_doc)
+    print(form_data)
 
     return 'Hello world! Hoping to recommend stuff here'
-
-
-@app.route('/check')
-def check():
-    restaurants_df.printSchema()
-    return 'Hi!'
 
 
 @app.route('/')
