@@ -64,7 +64,7 @@
                     <li class="selected-ratings-group" style="display:none">
                         <a class="page-scroll" href="#ratings">Your Ratings</a>
                     </li>
-                    <li class="recommendations-group">
+                    <li class="recommendations-group" style="display: none">
                         <a class="page-scroll" href="#recommendations">Recommendations</a>
                     </li>
                     <li>
@@ -97,7 +97,7 @@
                     <h2 class="section-heading">Rate Restaurants</h2>
                     <hr class="light">
                     <p class="text-faded">Start rating restaurants and we'll recommend new ones to try</p>
-                    <form action="/search" id="searchForm">
+                    <form id="searchForm">
                         <div class="input-group">      
                             <input type="text" class="form-control form-control-inline" placeholder="Keyword..." name="keyword">
                             <input type="text" class="form-control form-control-inline" placeholder="Location..." name="location">
@@ -135,7 +135,11 @@
             <div class="row">
                 <div class="col-lg-12 text-center">
                     <p>
-                        <a href="#recommendations" class="btn btn-primary btn-xl page-scroll">Get Recommendations!</a>
+                        <form id="ratingsForm">
+                            <button class="btn btn-primary btn-xl" type="submit">
+                                Get Recommendations!
+                            </button>
+                        </form>
                     </p>
                 </div>
             </div>
@@ -185,7 +189,7 @@
         </div>
     </section> -->
 
-    <section id="recommendations" class="no-padding recommendations-group">
+    <section id="recommendations" class="no-padding recommendations-group" style="display: none">
         <div class="container-fluid">
             <div class="row no-gutter">
                 <div class="col-xs-6 col-sm-4 col-lg-2">
@@ -291,7 +295,7 @@
         </div>
     </aside> -->
 
-    <section id="contact">
+    <section id="contact" class="bg-dark">
         <div class="container">
             <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 text-center">

@@ -2,6 +2,7 @@ const $searchLoading = $('#search-loading');
 const $searchResults = $('#search-results');
 const $selectedRatingsGroup = $('.selected-ratings-group');
 const $selectedRatings = $('#selected-ratings');
+const $recommendationsGroup = $('.recommendations-group');
 let all_ratings = {};
 const valid_rating_values = {1:true, 2:true, 3:true, 4:true, 5:true};
 
@@ -15,7 +16,7 @@ $('#searchForm').submit(function(event) {
   var $form = $(this);
   var keyword = $form.find('input[name="keyword"]').val();
   var location = $form.find('input[name="location"]').val();
-  var url = $form.attr('action');
+  var url = '/search';
 
   $searchResults.empty()
   $searchLoading.show()
@@ -196,4 +197,9 @@ $(document).ajaxComplete(function() {
     // console.log(all_ratings)
     update_user_ratings()
   })
+})
+
+// Attach a submit handler to the form
+$('#ratingsForm').submit(function(event) {
+  $recommendationsGroup.show()
 })
