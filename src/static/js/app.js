@@ -3,6 +3,8 @@ const $searchResults = $('#search-results');
 const $selectedRatingsGroup = $('.selected-ratings-group');
 const $selectedRatings = $('#selected-ratings');
 const $recommendationsGroup = $('.recommendations-group');
+const $recommendationListLoading = $('#recommendation-list-loading');
+const $recommendationList = $('#recommendation-list');
 let all_ratings = {};
 const valid_rating_values = {1:true, 2:true, 3:true, 4:true, 5:true};
 
@@ -55,7 +57,7 @@ $('#searchForm').submit(function(event) {
       )
       $.each(location, function(i, location_line) {
         html += '<div class="address">'+location_line+'</div>'
-      });
+      })
       html += (
           '</div>'+
           '<div class="col-xs-12 col-sm-2 cell">'+
@@ -204,14 +206,18 @@ $('#ratingsForm').submit(function(event) {
 
   var url = '/recommend';
 
-  console.log(all_ratings)
+  // console.log(all_ratings)
 
   var user_ratings = {}
   $.each(all_ratings, function(k, v) {
     user_ratings[v['model_id']] = v['rating']
   })
 
-  console.log(user_ratings)
+  // console.log(user_ratings)
+
+  $recommendationList.empty()
+  $recommendationsGroup.show()
+  $recommendationListLoading.show()
 
   // Send the data using post
   var posting = $.post(url, user_ratings, dataType='json');
@@ -219,7 +225,40 @@ $('#ratingsForm').submit(function(event) {
 
   // Put the results in a div
   posting.done(function(data) {
-    console.log(data)
-    $recommendationsGroup.show()
+    $recommendationListLoading.hide()
+
+    // console.log(data)
+
+    $.each(data, function(k, v) {
+      var name = v['name'];
+      var image_url = v['image_url'];
+      var url = v['url'];
+      var location = v['location'][5];
+      var html = (
+        '<div class="col-xs-6 col-sm-4 col-lg-2">'+
+          '<a href="'+url+'" class="portfolio-box" target="_blank">'+
+            '<img src="'+image_url+'" '+
+              'class="img-responsive" alt="">'+
+            '<div class="portfolio-box-caption">'+
+              '<div class="portfolio-box-caption-content">'+
+                '<div class="restaurant-name">'+
+                    name+
+                '</div>'+
+                '<div class="restaurant-city text-faded">'
+      );
+      $.each(location, function(i, location_line) {
+        html += '<div class="address">'+location_line+'</div>'
+      })
+      html += (
+                '</div>'+
+              '</div>'+
+            '</div>'+
+          '</a>'+
+        '</div>'
+      )
+
+      $recommendationList.append(html)
+    })
+
   })
 })

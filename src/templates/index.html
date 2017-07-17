@@ -25,15 +25,6 @@
     <!-- Theme CSS -->
     <link href="{{ url_for('static', filename='css/creative.min.css') }}" rel="stylesheet">
 
-    <!-- app CSS -->
-    <!-- <link href="{{ url_for('static', filename='css/app.css') }}" rel="stylesheet"> -->
-
-
-    <!-- bootstrap-star-rating CSS -->
-    <!-- <link href="{{ url_for('static', filename='vendor/bootstrap-star-rating/css/star-rating.min.css') }}" media="all" rel="stylesheet" type="text/css" />
-    <link href="{{ url_for('static', filename='vendor/bootstrap-star-rating/themes/krajee-fa/theme.min.css') }}" media="all" rel="stylesheet" type="text/css" />
- -->
-   <!--  <script async="" src="https://s3-media2.fl.yelpcdn.com/assets/srv0/svg_icons/10f9148f7c97/assets/svg_sprite.js?callback=window.yelp.__injectSvgSpritesheet"></script> -->
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -113,7 +104,7 @@
         </div>
         <div class="container">
             <!-- this spinner will be shown when waiting for search results to return from server. -->
-            <div class="text-center" id="search-loading" style="display: none">
+            <div id="search-loading" class="text-center" style="display: none">
                 <i class="fa fa-4x fa-spinner fa-spin"></i>
             </div>
             <!-- the result of the search will be rendered inside this div -->
@@ -146,154 +137,16 @@
         </div>
     </section>
 
-<!--     <section id="services">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12 text-center">
-                    <h2 class="section-heading">At Your Service</h2>
-                    <hr class="primary">
-                </div>
-            </div>
-        </div>
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-3 col-md-6 text-center">
-                    <div class="service-box">
-                        <i class="fa fa-4x fa-diamond text-primary sr-icons"></i>
-                        <h3>Sturdy Templates</h3>
-                        <p class="text-muted">Our templates are updated regularly so they don't break.</p>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6 text-center">
-                    <div class="service-box">
-                        <i class="fa fa-4x fa-paper-plane text-primary sr-icons"></i>
-                        <h3>Ready to Ship</h3>
-                        <p class="text-muted">You can use this theme as is, or you can make changes!</p>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6 text-center">
-                    <div class="service-box">
-                        <i class="fa fa-4x fa-newspaper-o text-primary sr-icons"></i>
-                        <h3>Up to Date</h3>
-                        <p class="text-muted">We update dependencies to keep things fresh.</p>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6 text-center">
-                    <div class="service-box">
-                        <i class="fa fa-4x fa-heart text-primary sr-icons"></i>
-                        <h3>Made with Love</h3>
-                        <p class="text-muted">You have to make your websites with love these days!</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section> -->
-
     <section id="recommendations" class="no-padding recommendations-group" style="display: none">
+         <!-- this spinner will be shown when waiting for search results to return from server. -->
+        <div id="recommendation-list-loading" class="text-center" style="display: none">
+            <i class="fa fa-4x fa-spinner fa-spin"></i>
+        </div>
         <div class="container-fluid">
-            <div class="row no-gutter">
-                <div class="col-xs-6 col-sm-4 col-lg-2">
-                    <a href="https://www.yelp.com/biz/fob-poke-bar-seattle-2" class="portfolio-box" target="_blank">
-                        <img src="{{ url_for('static', filename='img/restaurants/FOB_Poke_Bar.jpg') }}" class="img-responsive" alt="">
-                        <div class="portfolio-box-caption">
-                            <div class="portfolio-box-caption-content">
-                                <div class="restaurant-city text-faded">
-                                    Seattle
-                                </div>
-                                <div class="restaurant-name">
-                                    FOB Poke Bar
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-xs-6 col-sm-4 col-lg-2">
-                    <a href="https://www.yelp.com/biz/paseo-caribbean-food-fremont-seattle-2" class="portfolio-box" target="_blank">
-                        <img src="{{ url_for('static', filename='img/restaurants/Paseo_Caribbean_Food_Fremont.jpg') }}" class="img-responsive" alt="">
-                        <div class="portfolio-box-caption">
-                            <div class="portfolio-box-caption-content">
-                                <div class="restaurant-city text-faded">
-                                    Seattle
-                                </div>
-                                <div class="restaurant-name">
-                                    Paseo Caribbean Food
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-xs-6 col-sm-4 col-lg-2">
-                    <a href="https://www.yelp.com/biz/moons-kitchen-seattle" class="portfolio-box" target="_blank">
-                        <img src="{{ url_for('static', filename='img/restaurants/Moons_Kitchen.jpg') }}" class="img-responsive" alt="">
-                        <div class="portfolio-box-caption">
-                            <div class="portfolio-box-caption-content">
-                                <div class="restaurant-city text-faded">
-                                    Seattle
-                                </div>
-                                <div class="restaurant-name">
-                                    Moon's Kitchen
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-xs-6 col-sm-4 col-lg-2">
-                    <a href="https://www.yelp.com/biz/pike-place-chowder-seattle" class="portfolio-box" target="_blank">
-                        <img src="{{ url_for('static', filename='img/restaurants/Pike_Place_Chowder.jpg') }}" class="img-responsive" alt="">
-                        <div class="portfolio-box-caption">
-                            <div class="portfolio-box-caption-content">
-                                <div class="restaurant-city text-faded">
-                                    Seattle
-                                </div>
-                                <div class="restaurant-name">
-                                    Pike Place Chowder
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-xs-6 col-sm-4 col-lg-2">
-                    <a href="https://www.yelp.com/biz/radiator-whiskey-seattle" class="portfolio-box" target="_blank">
-                        <img src="{{ url_for('static', filename='img/restaurants/Radiator_Whiskey.jpg') }}" class="img-responsive" alt="">
-                        <div class="portfolio-box-caption">
-                            <div class="portfolio-box-caption-content">
-                                <div class="restaurant-city text-faded">
-                                    Seattle
-                                </div>
-                                <div class="restaurant-name">
-                                    Radiator Whiskey
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-xs-6 col-sm-4 col-lg-2">
-                    <a href="https://www.yelp.com/biz/tilikum-place-cafe-seattle-3" class="portfolio-box" target="_blank">
-                        <img src="{{ url_for('static', filename='img/restaurants/Tilikum_Place_Cafe.jpg') }}" class="img-responsive" alt="">
-                        <div class="portfolio-box-caption">
-                            <div class="portfolio-box-caption-content">
-                                <div class="restaurant-city text-faded">
-                                    Seattle
-                                </div>
-                                <div class="restaurant-name">
-                                    Tilikum Place Cafe
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
+            <div id="recommendation-list" class="row no-gutter">
             </div>
         </div>
     </section>
-
-<!--     <aside class="bg-dark">
-        <div class="container text-center">
-            <div class="call-to-action">
-                <h2>Free Download at Start Bootstrap!</h2>
-                <a href="http://startbootstrap.com/template-overviews/creative/" class="btn btn-default btn-xl sr-button">Download Now!</a>
-            </div>
-        </div>
-    </aside> -->
 
     <section id="contact" class="bg-dark">
         <div class="container">
@@ -327,8 +180,6 @@
 
     <!-- jQuery -->
     <script src="{{ url_for('static', filename='vendor/jquery/jquery.min.js') }}"></script>
-    <!-- <script src="http://code.jquery.com/jquery-migrate-1.4.1.js"></script> -->
-    <!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script> -->
 
     <!-- Bootstrap Core JavaScript -->
     <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.min.js') }}"></script>
@@ -343,10 +194,6 @@
 
     <!-- bootstrap rating input -->
     <script src="{{ url_for('static', filename='vendor/bootstrap-rating-input/bootstrap-rating-input.min.js') }}"></script>
-
-    <!-- bootstrap star rating -->
-    <!-- <script src="{{ url_for('static', filename='vendor/bootstrap-star-rating/js/star-rating.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='vendor/bootstrap-star-rating/themes/krajee-fa/theme.min.js') }}"></script> -->
 
     <!-- app scripts -->
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>

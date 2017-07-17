@@ -2,6 +2,7 @@ from recommender import Recommender
 import pyspark as ps
 import numpy as np
 import pickle
+import pyspark.sql.functions as F
 
 spark = (
     ps.sql.SparkSession.builder
@@ -13,6 +14,23 @@ spark = (
 def train_and_save_model_data():
     # Load restaurant reviews
     ratings_df = spark.read.parquet('../data/ratings_ugt10_igt10')
+
+    discount_factor_df = (
+        ratings_df
+        .groupBy('item')
+        .count()
+        .select(
+            F.col('item'),
+            F.col('count').alias('num_ratings'),
+            (1 - (1 / F.sqrt(F.col('count')))).alias('discount_factor')
+        )
+    )
+
+    discount_factor_df.write.parquet(
+        path='../data/discount_factor',
+        mode='overwrite',
+        compression='gzip'
+    )
 
     lambda_1 = 7
     lambda_2 = 12
@@ -41,22 +59,11 @@ def train_and_save_model_data():
 
     model = estimator.fit(ratings_df)
 
-    item_factors_df = model.itemFactors
-
-    item_factors_list = []
-    item_ids_list = []
-    for row in model.itemFactors.collect():
-        item_factors_list.append(row['features'])
-        item_ids_list.append(row['id'])
-
-    item_factors = np.array(item_factors_list)
-    item_ids = np.array(item_ids_list)
-
-    with open('../data/item_factors.pkl', 'wb') as f:
-        pickle.dump(item_factors, f)
-
-    with open('../data/item_ids.pkl', 'wb') as f:
-        pickle.dump(item_ids, f)
+    model.itemFactors.write.parquet(
+        path='../data/item_factors',
+        mode='overwrite',
+        compression='gzip'
+    )
 
     model.avg_rating_df.write.parquet(
         path='../data/avg_rating',
