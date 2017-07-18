@@ -24,7 +24,7 @@ def save_discount_factor(ratings_df):
         .select(
             F.col('item'),
             F.col('count').alias('num_ratings'),
-            (1 - (1 / F.col('count'))).alias('discount_factor')
+            (1 - (1 / F.pow(F.col('count'), 0.5))).alias('discount_factor')
         )
     )
 
@@ -91,7 +91,7 @@ def train_and_save_model_data(ratings_df):
 def main():
     ratings_df = load_ratings()
     save_discount_factor(ratings_df)
-    train_and_save_model_data(ratings_df)
+    # train_and_save_model_data(ratings_df)
 
 
 if __name__ == '__main__':
