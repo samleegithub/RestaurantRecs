@@ -19,6 +19,11 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
                           "bias with ALS model",
                           typeConverter=TypeConverters.toBoolean)
 
+    discountPower = Param(Params._dummy(), "discount_power", 
+                          "discount power to compensate for items with low " +
+                          "number of ratings.",
+                          typeConverter=TypeConverters.toFloat)
+
     lambda_1 = Param(Params._dummy(), "lambda_1", "regularization parameter "
                      + "for item bias",
                      typeConverter=TypeConverters.toInt)
@@ -75,7 +80,8 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
 
     @keyword_only
-    def __init__(self, useALS=True, useBias=True, lambda_1=25, lambda_2=10, rank=10,
+    def __init__(self, useALS=True, useBias=True, discountPower=0.5,
+                 lambda_1=25, lambda_2=10, rank=10,
                  maxIter=10, regParam=0.1, numUserBlocks=10, numItemBlocks=10,
                  implicitPrefs=False, alpha=1.0, userCol="user",
                  itemCol="item", seed=None, ratingCol="rating",
@@ -94,7 +100,8 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         None
         '''
         super(Recommender, self).__init__()
-        self._setDefault(useALS=True, useBias=True, lambda_1=25, lambda_2=10, rank=10,
+        self._setDefault(useALS=True, useBias=True, discountPower=0.5,
+                         lambda_1=25, lambda_2=10, rank=10,
                          maxIter=10, regParam=0.1, numUserBlocks=10,
                          numItemBlocks=10, implicitPrefs=False, alpha=1.0,
                          userCol="user", itemCol="item", ratingCol="rating",
@@ -108,7 +115,8 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
 
     @keyword_only
-    def setParams(self, useALS=True, useBias=True, lambda_1=25, lambda_2=10, rank=10,
+    def setParams(self, useALS=True, useBias=True, discountPower=0.5,
+                  lambda_1=25, lambda_2=10, rank=10,
                   maxIter=10, regParam=0.1, numUserBlocks=10, numItemBlocks=10,
                   implicitPrefs=False, alpha=1.0, userCol="user",
                   itemCol="item", seed=None, ratingCol="rating",
@@ -144,6 +152,18 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         Gets the value of useBias or its default value.
         """
         return self.getOrDefault(self.useBias)
+
+    def setDiscountPower(self, value):
+        """
+        Sets the value of :py:attr:`discountPower`.
+        """
+        return self._set(discountPower=value)
+
+    def getDiscountPower(self):
+        """
+        Gets the value of discountPower or its default value.
+        """
+        return self.getOrDefault(self.discountPowr)
 
     def setLambda_1(self, value):
         """
@@ -397,6 +417,18 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
             )
         )
 
+        discount_factor_df = (
+            ratings_df
+            .groupBy('item')
+            .count()
+            .select(
+                F.col('item'),
+                F.col('count').alias('num_ratings'),
+                (1 - (1 / F.pow(F.col('count'), self.getDiscountPower())))
+                .alias('discount_factor')
+            )
+        )
+
         if self.getUseALS():
             if self.getUseBias():
                 residual_df = (
@@ -463,7 +495,7 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
                 self.getUseALS(), self.getUseBias(),
                 # self.getColdStartStrategy(),
                 recommender, avg_rating_df,
-                user_bias_df, item_bias_df
+                user_bias_df, item_bias_df, discount_factor_df
             )
         )
 
@@ -472,7 +504,7 @@ class RecommenderModel(Model):
     def __init__(self, useALS, useBias, 
                  # coldStartStrategy,
                  recommender,
-                 avg_rating_df, user_bias_df, item_bias_df):
+                 avg_rating_df, user_bias_df, item_bias_df, discount_factor_df):
         super(RecommenderModel, self).__init__()
         self.useALS = useALS
         self.useBias = useBias
@@ -481,6 +513,7 @@ class RecommenderModel(Model):
         self.avg_rating_df = avg_rating_df
         self.user_bias_df = user_bias_df
         self.item_bias_df = item_bias_df
+        self.discount_factor_df = discount_factor_df
 
 
     @property
@@ -582,9 +615,11 @@ class RecommenderModel(Model):
                 .crossJoin(self.avg_rating_df)
                 .join(self.user_bias_df, on='user')
                 .join(self.item_bias_df, on='item')
+                .join(self.discount_factor_df, on='item')
                 .fillna({
                     'user_bias': 0.0,
-                    'item_bias': 0.0
+                    'item_bias': 0.0,
+                    'discount_factor': 1.0
                 })
                 .withColumn(
                     'prediction',
