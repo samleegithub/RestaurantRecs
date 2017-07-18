@@ -18,13 +18,22 @@ $('#searchForm').submit(function(event) {
   var $form = $(this);
   var keyword = $form.find('input[name="keyword"]').val();
   var location = $form.find('input[name="location"]').val();
-  var url = '/search';
 
   $searchResults.empty()
   $searchLoading.show()
 
-  // Send the data using post
-  var posting = $.post(url, { keyword: keyword, location: location }, dataType='json');
+  var data = {
+    keyword: keyword,
+    location: location
+  }
+
+  var posting = $.ajax({
+      type: 'POST',
+      contentType: 'application/json',
+      url: '/search',
+      dataType : 'json',
+      data : JSON.stringify(data),
+  });
 
   // Put the results in a div
   posting.done(function(data) {
@@ -199,29 +208,43 @@ function update_user_ratings() {
   }
 }
 
-// Attach a submit handler to the form
-$('#ratingsForm').submit(function(event) {
-  // Stop form from submitting normally
-  event.preventDefault()
 
-  var url = '/recommend';
-
-  // console.log(all_ratings)
-
+function get_user_ratings() {
   var user_ratings = {}
   $.each(all_ratings, function(k, v) {
     user_ratings[v['model_id']] = v['rating']
   })
+  return user_ratings
+}
 
-  // console.log(user_ratings)
+
+function get_recomendations(event) {
+  // Stop form from submitting normally
+  event.preventDefault()
+
+  var $form = $('#filterForm');
+  var keyword = $form.find('input[name="keyword"]').val();
+  var location = $form.find('input[name="location"]').val();
+
+  user_ratings = get_user_ratings()
 
   $recommendationList.empty()
   $recommendationsGroup.show()
   $recommendationListLoading.show()
 
-  // Send the data using post
-  var posting = $.post(url, user_ratings, dataType='json');
+  var data = {
+    user_ratings: user_ratings,
+    keyword: keyword,
+    location: location
+  }
 
+  var posting = $.ajax({
+      type: 'POST',
+      contentType: 'application/json',
+      url: '/recommend',
+      dataType : 'json',
+      data : JSON.stringify(data),
+  });
 
   // Put the results in a div
   posting.done(function(data) {
@@ -261,4 +284,10 @@ $('#ratingsForm').submit(function(event) {
     })
 
   })
-})
+}
+
+// Attach a submit handler to the form
+$('#ratingsForm').submit(get_recomendations)
+
+// Attach a submit handler to the form
+$('#filterForm').submit(get_recomendations)

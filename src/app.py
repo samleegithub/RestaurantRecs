@@ -77,9 +77,14 @@ find_str_in_categories_udf = F.udf(find_str_in_categories, T.BooleanType())
 
 @app.route('/search', methods=['POST'])
 def search():
-    keyword = str(request.form['keyword']).lower()
-    location = str(request.form['location']).lower()
-    # print(keyword, location)
+    # keyword = str(request.form['keyword']).lower()
+    # location = str(request.form['location']).lower()
+
+    json_data = request.get_json()
+
+    keyword = str(json_data['keyword']).lower()
+    location = str(json_data['location']).lower()
+
     results_data = (
         restaurants_with_id_df
         .filter(
@@ -181,11 +186,13 @@ def make_new_user_predictions(user_ratings_df):
 
 @app.route('/recommend', methods=['POST'])
 def recommend():
-    form_data = request.form
+    json_data = request.get_json()
 
-    # print(form_data)
-    data = list(form_data.items())
-    # print(data)
+    user_ratings = json_data['user_ratings']
+    keyword = str(json_data['keyword']).lower()
+    location = str(json_data['location']).lower()
+
+    user_ratings_data = list(user_ratings.items())
 
     # Define schema
     schema = T.StructType([
@@ -193,7 +200,7 @@ def recommend():
         T.StructField('rating', T.StringType(), True)
     ])
 
-    user_ratings_df = spark.createDataFrame(data, schema=schema)
+    user_ratings_df = spark.createDataFrame(user_ratings_data, schema=schema)
 
     user_ratings_df = (
         user_ratings_df
@@ -211,6 +218,20 @@ def recommend():
     prediction_data_df = (
         new_predicted_rating_df
         .join(restaurants_with_id_df, on='item')
+        .filter(
+            (
+                F.lower(F.col('name')).like('%{}%'.format(keyword))
+                | find_str_in_categories_udf(F.col('categories'), F.lit(keyword))
+            )
+            & (
+                F.lower(F.col('location.city')).like('%{}%'.format(location))
+                | F.lower(F.col('location.address1')).like('%{}%'.format(location))
+                | F.lower(F.col('location.address2')).like('%{}%'.format(location))
+                | F.lower(F.col('location.address3')).like('%{}%'.format(location))
+                | F.lower(F.col('location.zip_code')).like('%{}%'.format(location))
+                | F.lower(F.col('location.state')).like('%{}%'.format(location))
+            )
+        )
         .join(
             user_ratings_df
             .select(
