@@ -544,6 +544,9 @@ input[type=search] {
   vertical-align: middle;
   float: none;
 }
+#searchForm {
+  padding-bottom: 20px;
+}
 #search-loading {
   padding-top: 19px;
 }
@@ -619,4 +622,8 @@ a.rating-clear {
 }
 #recommendation-list-loading {
   padding-bottom: 50px;
+}
+#recommendations-header {
+  padding-top: 50px;
+  padding-bottom: 20px;
 }
