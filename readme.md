@@ -2,6 +2,7 @@ Restaurant Recs
 ===============
 http://restaurantrecs.com/
 
+![alt text](images/RestaurantRecsScreenshot.png "Restaurant Recs Screenshot")
 
 Idea
 ----
