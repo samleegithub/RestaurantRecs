@@ -93,3 +93,8 @@ Contact Info
 Sam Lee
 
 http://linkedin.com/in/sam-lee-data
+
+
+References
+----------
+[Reference List](references.md)
