@@ -88,13 +88,13 @@ Future Steps
 * Add all restaurants for Washington, California, Oregon and Nevada
 
 
+References
+----------
+[Reference List](references.md)
+
+
 Contact Info
 ------------
 Sam Lee
 
 http://linkedin.com/in/sam-lee-data
-
-
-References
-----------
-[Reference List](references.md)
