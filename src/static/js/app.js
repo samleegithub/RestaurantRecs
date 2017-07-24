@@ -222,7 +222,7 @@ function get_recomendations(event) {
   // Stop form from submitting normally
   event.preventDefault()
 
-  var $form = $('#filterForm');
+  var $form = $(this);
   var keyword = $form.find('input[name="keyword"]').val();
   var location = $form.find('input[name="location"]').val();
 
@@ -288,6 +288,3 @@ function get_recomendations(event) {
 
 // Attach a submit handler to the form
 $('#ratingsForm').submit(get_recomendations)
-
-// Attach a submit handler to the form
-$('#filterForm').submit(get_recomendations)
