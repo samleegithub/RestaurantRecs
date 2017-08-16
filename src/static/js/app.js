@@ -254,6 +254,7 @@ function get_recomendations(event) {
 
     $.each(data, function(k, v) {
       var name = v['name'];
+      var prediction = v['prediction']
       var image_url = v['image_url'];
       var url = v['url'];
       var location = v['location'][5];
@@ -265,7 +266,7 @@ function get_recomendations(event) {
             '<div class="portfolio-box-caption">'+
               '<div class="portfolio-box-caption-content">'+
                 '<div class="restaurant-name">'+
-                    name+
+                    name+' '+prediction+
                 '</div>'+
                 '<div class="restaurant-city text-faded">'
       );

@@ -174,10 +174,12 @@ def make_new_user_predictions(user_ratings_df):
             'prediction',
             (
                 F.col('prediction')
-                + F.col('avg_rating')
-                + F.col('item_bias')
-                - 5.0
-            ) * F.col('discount_factor')
+                # + F.col('avg_rating')
+                # + F.col('item_bias')
+                # - 5.0
+            ) 
+            # * F.col('discount_factor')
+            * (1 - (0.5 / F.pow(F.col('num_ratings'), 0.5)))
         )
     )
 

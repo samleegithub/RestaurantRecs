@@ -6,8 +6,8 @@ import time
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 import pyspark.sql.functions as F
-import matplotlib.pyplot as plt
-plt.style.use('ggplot')
+# import matplotlib.pyplot as plt
+# plt.style.use('ggplot')
 
 spark = (
     ps.sql.SparkSession.builder
@@ -154,25 +154,25 @@ def cv_grid_search(train_df, test_df):
     estimator = Recommender(
         useALS=True,
         useBias=True,
-        lambda_1=7,
-        lambda_2=12,
+        lambda_1=0.5,
+        lambda_2=0.5,
         userCol='user',
         itemCol='item',
         ratingCol='rating',
-        rank=76,
-        regParam=0.7,
+        rank=200,
+        regParam=0.1,
         maxIter=15,
         nonnegative=True
     )
 
     paramGrid = (
         ParamGridBuilder()
-        # .addGrid(estimator.lambda_1, [3, 5, 7])
-        # .addGrid(estimator.lambda_2, [5, 8, 10, 12])
-        # .addGrid(estimator.rank, [76, 80, 84, 88])
+        .addGrid(estimator.lambda_1, [0, 0.5, 1])
+        .addGrid(estimator.lambda_2, [0, 0.5, 1])
+        # .addGrid(estimator.rank, [80, 120, 160, 200])
         # .addGrid(estimator.regParam, [0.001, 0.0025, 0.005, 0.00625, 0.0075, 0.00875])
         # .addGrid(estimator.regParam, [0.56, 0.625, 0.7])
-        .addGrid(estimator.maxIter, [5, 10, 15])
+        # .addGrid(estimator.maxIter, [5, 10, 15])
         # .addGrid(estimator.nonnegative, [True, False])
         .build()
     )
@@ -592,10 +592,10 @@ def print_counts(ratings_df, label):
 def main():
 
     # Load restaurant reviews
-    ratings_df = spark.read.parquet('../data/ratings_ugt10_igt10')
+    ratings_df = spark.read.parquet('../data/ratings_ugt1_igt1')
 
     # Randomly split data into train and test datasets
-    train_df, test_df = ratings_df.randomSplit(weights=[0.75, 0.25])
+    train_df, test_df = ratings_df.randomSplit(weights=[0.5, 0.5])
 
     # print(ratings_df.printSchema())
     print_counts(ratings_df, 'Total')

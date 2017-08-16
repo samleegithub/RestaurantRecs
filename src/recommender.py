@@ -21,11 +21,11 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
     lambda_1 = Param(Params._dummy(), "lambda_1", "regularization parameter "
                      + "for item bias",
-                     typeConverter=TypeConverters.toInt)
+                     typeConverter=TypeConverters.toFloat)
 
     lambda_2 = Param(Params._dummy(), "lambda_2", "regularization parameter "
                      + "for user bias",
-                     typeConverter=TypeConverters.toInt)
+                     typeConverter=TypeConverters.toFloat)
 
     rank = Param(Params._dummy(), "rank", "rank of the factorization",
                  typeConverter=TypeConverters.toInt)
@@ -356,16 +356,21 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
             .crossJoin(avg_rating_df)
             .groupBy(self.getItemCol())
             .agg(
-                F.sum(
+                F.avg(
                     F.col(self.getRatingCol()) 
                     - F.col('avg_rating')
-                ).alias('sum_diffs'),
+                ).alias('avg_diffs'),
                 F.count("*").alias('ct')
             )
             .withColumn(
                 'item_bias',
-                F.col('sum_diffs')
-                / (self.getLambda_1() + F.col('ct'))
+                F.col('avg_diffs')
+                * (
+                    1 - (
+                        self.getLambda_1()
+                        / F.pow(F.col('ct'), 0.5)
+                    )
+                )
             )
             .select(
                 self.getItemCol(),
@@ -379,17 +384,22 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
             .join(item_bias_df, on=self.getItemCol())
             .groupBy(self.getUserCol())
             .agg(
-                F.sum(
+                F.avg(
                     F.col(self.getRatingCol())
                     - F.col('avg_rating')
                     - F.col('item_bias')
-                ).alias('sum_diffs'),
+                ).alias('avg_diffs'),
                 F.count("*").alias('ct')
             )            
             .withColumn(
                 'user_bias',
-                F.col('sum_diffs')
-                / (self.getLambda_2() + F.col('ct'))
+                F.col('avg_diffs')
+                * (
+                    1 - (
+                        self.getLambda_2()
+                        / F.pow(F.col('ct'), 0.5)
+                    )
+                )
             )
             .select(
                 self.getUserCol(),

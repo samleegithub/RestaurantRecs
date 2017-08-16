@@ -13,7 +13,8 @@ spark = (
 
 
 def load_ratings():
-    return spark.read.parquet('../data/ratings_ugt10_igt10')
+    # return spark.read.parquet('../data/ratings_ugt10_igt10')
+    return spark.read.parquet('../data/ratings_ugt1_igt1')
 
 
 def save_discount_factor(ratings_df):
@@ -36,14 +37,14 @@ def save_discount_factor(ratings_df):
 
 
 def train_and_save_model_data(ratings_df):
-    lambda_1 = 7
-    lambda_2 = 12
+    lambda_1 = 0.5
+    lambda_2 = 0.5
     useALS = True
     useBias = True
-    rank = 76
+    rank = 200
     regParam = 0.7
     maxIter = 15
-    nonnegative=True
+    nonnegative = True
     implicitPrefs = False
 
     estimator = Recommender(
@@ -91,7 +92,7 @@ def train_and_save_model_data(ratings_df):
 def main():
     ratings_df = load_ratings()
     save_discount_factor(ratings_df)
-    # train_and_save_model_data(ratings_df)
+    train_and_save_model_data(ratings_df)
 
 
 if __name__ == '__main__':
