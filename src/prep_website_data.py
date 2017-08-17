@@ -3,6 +3,7 @@ import pyspark as ps
 import numpy as np
 import pickle
 import pyspark.sql.functions as F
+from pyspark.ml.recommendation import ALS
 
 spark = (
     ps.sql.SparkSession.builder
@@ -40,11 +41,11 @@ def train_and_save_model_data(ratings_df):
     lambda_1 = 0.5
     lambda_2 = 0.5
     useALS = True
-    useBias = False
-    rank = 2
+    useBias = True
+    rank = 75
     regParam = 0.7
-    maxIter = 15
-    nonnegative = True
+    maxIter = 5
+    nonnegative = False
     implicitPrefs = False
 
     estimator = Recommender(
@@ -61,6 +62,17 @@ def train_and_save_model_data(ratings_df):
         nonnegative=nonnegative,
         implicitPrefs=implicitPrefs
     )
+
+    # estimator = ALS(
+    #     userCol='user',
+    #     itemCol='item',
+    #     ratingCol='rating',
+    #     rank=rank,
+    #     regParam=regParam,
+    #     maxIter=maxIter,
+    #     nonnegative=nonnegative,
+    #     implicitPrefs=implicitPrefs
+    # )
 
     model = estimator.fit(ratings_df)
 

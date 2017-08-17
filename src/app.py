@@ -158,6 +158,8 @@ def get_user_factors(user_ratings_df):
 def make_new_user_predictions(user_ratings_df):
     user_factors = get_user_factors(user_ratings_df)
 
+    print('user_factors: {}'.format(user_factors))
+
     new_predictions = np.dot(user_factors, item_factors.T)
 
     new_prediction_df = spark.createDataFrame(
@@ -173,9 +175,9 @@ def make_new_user_predictions(user_ratings_df):
         .withColumn(
             'prediction',
             (
-                2 * F.col('prediction')
+                F.col('prediction')
                 + F.col('avg_rating')
-                + 0.5 * F.col('item_bias')
+                + F.col('item_bias')
                 - 5.0
             ) 
             # * F.col('discount_factor')
@@ -253,7 +255,7 @@ def recommend():
 
 
     results = {}
-    for i, row in enumerate(prediction_data_df.take(24)):
+    for i, row in enumerate(prediction_data_df.take(25)):
         results[i] = {
             'model_id': row['item'],
             'prediction': row['prediction'],

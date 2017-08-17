@@ -294,11 +294,12 @@ function get_recomendations(event) {
       html += (
           '</div>' +
           '<div class="col-xs-12 col-sm-6 vcenter cell">'+
-            k+' <a href="'+url+'" class="restaurant-name-link" target="_blank">'+
-              name+'</a><br />'+
-            'prediction = '+prediction+'<br />'+
-            'rating = '+rating+'('+num_ratings+')<br />'+
-            'item_bias = '+item_bias+
+            // k+
+            ' <a href="'+url+'" class="restaurant-name-link" target="_blank">'+
+              name+'</a>'+
+            // '<br />prediction = '+prediction+
+            // '<br />rating = '+rating+'('+num_ratings+')'+
+            // '<br />item_bias = '+item_bias+
           '</div>'+
           '<div class="col-xs-12 col-sm-4 vcenter cell">'
       )

@@ -152,40 +152,40 @@ class TopQuantileEvaluator(object):
 
 
 def cv_grid_search(train_df, test_df):
-    # estimator = Recommender(
-    #     useALS=True,
-    #     useBias=False,
-    #     lambda_1=0.5,
-    #     lambda_2=0.5,
-    #     userCol='user',
-    #     itemCol='item',
-    #     ratingCol='rating',
-    #     rank=10,
-    #     regParam=0.1,
-    #     maxIter=15,
-    #     nonnegative=True
-    # )
-
-    estimator = ALS(
+    estimator = Recommender(
+        useALS=True,
+        useBias=True,
+        lambda_1=0.5,
+        lambda_2=0.5,
         userCol='user',
         itemCol='item',
         ratingCol='rating',
-        rank=2,
+        rank=10,
         regParam=0.7,
-        maxIter=15,
-        nonnegative=True,
-        coldStartStrategy='drop'
+        maxIter=10,
+        nonnegative=False
     )
+
+    # estimator = ALS(
+    #     userCol='user',
+    #     itemCol='item',
+    #     ratingCol='rating',
+    #     rank=2,
+    #     regParam=0.7,
+    #     maxIter=5,
+    #     nonnegative=False,
+    #     coldStartStrategy='drop'
+    # )
 
     paramGrid = (
         ParamGridBuilder()
         # .addGrid(estimator.lambda_1, [0, 0.5, 1])
         # .addGrid(estimator.lambda_2, [0, 0.5, 1])
-        # .addGrid(estimator.rank, [1, 2, 3, 4])
+        .addGrid(estimator.rank, [5, 10, 20, 40])
         # .addGrid(estimator.regParam, [0.001, 0.0025, 0.005, 0.00625, 0.0075, 0.00875])
         # .addGrid(estimator.regParam, [0.56, 0.625, 0.7])
         # .addGrid(estimator.regParam, [0.5, 0.6, 0.7, 0.8, 0.9])
-        .addGrid(estimator.maxIter, [5, 10, 15])
+        # .addGrid(estimator.maxIter, [5, 10, 15])
         # .addGrid(estimator.nonnegative, [True, False])
         .build()
     )
@@ -217,16 +217,20 @@ def cv_grid_search(train_df, test_df):
 
     min_index = np.argmin(avgMetrics)
 
-    # print(paramMaps)
-    # print(avgMetrics)
+    for paramMap, avgMetric in zip(paramMaps, avgMetrics):
+        print('Avg Metric: {}'.format(avgMetric))
+        for key, value in paramMap.items():
+            print('  {}: {}'.format(key, value))
+
+    print(avgMetrics)
 
     print('Best Params:')
     for key, value in paramMaps[min_index].items():
         print('{} : {}'.format(key, value))
     print('Best Metric: {}'.format(avgMetrics[min_index]))
 
-    rmse = evaluator.evaluate(cvModel.bestModel.transform(test_df))
-    print("Test Metric: {}".format(rmse))
+    test_metric = evaluator.evaluate(cvModel.bestModel.transform(test_df))
+    print("Test Metric: {}".format(test_metric))
 
 
 def get_baseline_scores(train_df, val_df, evaluator, eval_name, lambda_1, lambda_2):
@@ -547,21 +551,34 @@ def plot_scores(train_df):
 
 
 def eval_model(train_df, test_df):
-    estimator = Recommender(
-        useALS=True,
-        lambda_1=5,
-        lambda_2=8,
+    # estimator = Recommender(
+    #     useALS=True,
+    #     lambda_1=5,
+    #     lambda_2=8,
+    #     userCol='user',
+    #     itemCol='item',
+    #     ratingCol='rating',
+    #     rank=2,
+    #     regParam=0.7,
+    #     maxIter=5,
+    #     nonnegative=True
+    # )
+
+    estimator = ALS(
         userCol='user',
         itemCol='item',
         ratingCol='rating',
-        rank=100,
-        regParam=0.2,
+        rank=2,
+        regParam=0.7,
         maxIter=5,
-        nonnegative=True
+        nonnegative=True,
+        coldStartStrategy='drop'
     )
 
-    evaluator = RegressionEvaluator(
+    evaluator_rmse = RegressionEvaluator(
         metricName="rmse", labelCol="rating", predictionCol="prediction")
+
+    evaluator_ndcg10 = NDCG10Evaluator()
 
     start_time = time.monotonic()
     step_start_time = time.monotonic()
@@ -583,10 +600,18 @@ def eval_model(train_df, test_df):
         .format(time.monotonic() - step_start_time))
     print('All done in {} seconds.'.format(time.monotonic() - start_time))
 
-    train_rmse = evaluator.evaluate(train_predictions_df)
-    test_rmse = evaluator.evaluate(test_predictions_df)
+    print_avg_predictions(train_predictions_df, 'Train')
+    print_avg_predictions(test_predictions_df, 'Test')
+
+    train_rmse = evaluator_rmse.evaluate(train_predictions_df)
+    test_rmse = evaluator_rmse.evaluate(test_predictions_df)
     print("Train RMSE: {}".format(train_rmse))
     print("Test RMSE: {}".format(test_rmse))
+
+    train_ndcg10 = evaluator_ndcg10.evaluate(train_predictions_df)
+    test_ndcg10 = evaluator_ndcg10.evaluate(test_predictions_df)
+    print("Train NDCG10: {}".format(train_ndcg10))
+    print("Test NDCG10: {}".format(test_ndcg10))
 
 
 def print_counts(ratings_df, label):
@@ -602,10 +627,26 @@ def print_counts(ratings_df, label):
         .format(label, ratings_df.groupBy('item').count().agg(F.avg('count')).collect()[0][0]))
 
 
+def print_avg_predictions(predictions_df, label):
+    result_row = (
+        predictions_df
+        .agg(
+            F.avg('rating').alias('avg_rating'),
+            F.stddev('rating').alias('stddev_rating'),
+            F.avg('prediction').alias('avg_prediction'),
+            F.stddev('prediction').alias('stddev_prediction')
+        ).collect()[0]
+    )
+    print('[{} Prediction] Rating Avg: {} Stddev: {}'
+        .format(label, result_row[0], result_row[1]))
+    print('[{} Prediction] Prediction Avg: {} Stddev: {}'
+        .format(label, result_row[2], result_row[3]))
+
+
 def main():
 
     # Load restaurant reviews
-    ratings_df = spark.read.parquet('../data/ratings_ugt1_igt1')
+    ratings_df = spark.read.parquet('../data/ratings')
 
     # Randomly split data into train and test datasets
     train_df, test_df = ratings_df.randomSplit(weights=[0.5, 0.5])
