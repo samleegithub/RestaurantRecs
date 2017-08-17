@@ -3,6 +3,7 @@ from recommender import Recommender
 import numpy as np
 import pyspark as ps
 import time
+from pyspark.ml.recommendation import ALS
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 import pyspark.sql.functions as F
@@ -151,28 +152,40 @@ class TopQuantileEvaluator(object):
 
 
 def cv_grid_search(train_df, test_df):
-    estimator = Recommender(
-        useALS=True,
-        useBias=True,
-        lambda_1=0.5,
-        lambda_2=0.5,
+    # estimator = Recommender(
+    #     useALS=True,
+    #     useBias=False,
+    #     lambda_1=0.5,
+    #     lambda_2=0.5,
+    #     userCol='user',
+    #     itemCol='item',
+    #     ratingCol='rating',
+    #     rank=10,
+    #     regParam=0.1,
+    #     maxIter=15,
+    #     nonnegative=True
+    # )
+
+    estimator = ALS(
         userCol='user',
         itemCol='item',
         ratingCol='rating',
-        rank=200,
-        regParam=0.1,
+        rank=2,
+        regParam=0.7,
         maxIter=15,
-        nonnegative=True
+        nonnegative=True,
+        coldStartStrategy='drop'
     )
 
     paramGrid = (
         ParamGridBuilder()
-        .addGrid(estimator.lambda_1, [0, 0.5, 1])
-        .addGrid(estimator.lambda_2, [0, 0.5, 1])
-        # .addGrid(estimator.rank, [80, 120, 160, 200])
+        # .addGrid(estimator.lambda_1, [0, 0.5, 1])
+        # .addGrid(estimator.lambda_2, [0, 0.5, 1])
+        # .addGrid(estimator.rank, [1, 2, 3, 4])
         # .addGrid(estimator.regParam, [0.001, 0.0025, 0.005, 0.00625, 0.0075, 0.00875])
         # .addGrid(estimator.regParam, [0.56, 0.625, 0.7])
-        # .addGrid(estimator.maxIter, [5, 10, 15])
+        # .addGrid(estimator.regParam, [0.5, 0.6, 0.7, 0.8, 0.9])
+        .addGrid(estimator.maxIter, [5, 10, 15])
         # .addGrid(estimator.nonnegative, [True, False])
         .build()
     )
@@ -190,7 +203,7 @@ def cv_grid_search(train_df, test_df):
         estimator=estimator,
         estimatorParamMaps=paramGrid,
         evaluator=evaluator,
-        numFolds=3
+        numFolds=5
     )
 
     # Run cross-validation, and choose the best set of parameters.

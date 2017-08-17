@@ -40,8 +40,8 @@ def train_and_save_model_data(ratings_df):
     lambda_1 = 0.5
     lambda_2 = 0.5
     useALS = True
-    useBias = True
-    rank = 200
+    useBias = False
+    rank = 2
     regParam = 0.7
     maxIter = 15
     nonnegative = True

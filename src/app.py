@@ -173,13 +173,13 @@ def make_new_user_predictions(user_ratings_df):
         .withColumn(
             'prediction',
             (
-                F.col('prediction')
-                # + F.col('avg_rating')
-                # + F.col('item_bias')
-                # - 5.0
+                2 * F.col('prediction')
+                + F.col('avg_rating')
+                + 0.5 * F.col('item_bias')
+                - 5.0
             ) 
             # * F.col('discount_factor')
-            * (1 - (0.5 / F.pow(F.col('num_ratings'), 0.5)))
+            * (1 - (1 / F.pow(F.col('num_ratings'), 0.5)))
         )
     )
 
@@ -233,6 +233,7 @@ def recommend():
                 | F.lower(F.col('location.zip_code')).like('%{}%'.format(location))
                 | F.lower(F.col('location.state')).like('%{}%'.format(location))
             )
+            # & (F.col('num_ratings') < 100)
         )
         .join(
             user_ratings_df
@@ -261,6 +262,8 @@ def recommend():
             'image_url': row['image_url'],
             'location': row['location'],
             'rating': row['rating'],
+            'num_ratings': row['num_ratings'],
+            'item_bias': row['item_bias'],
             'categories': row['categories']
         }
 

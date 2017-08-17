@@ -255,29 +255,58 @@ function get_recomendations(event) {
     $.each(data, function(k, v) {
       var name = v['name'];
       var prediction = v['prediction']
+      var rating = v['rating']
+      var num_ratings = v['num_ratings']
+      var item_bias = v['item_bias']
       var image_url = v['image_url'];
       var url = v['url'];
       var location = v['location'][5];
+      // var html = (
+      //   '<div class="col-xs-6 col-sm-4 col-lg-2">'+
+      //     '<a href="'+url+'" class="portfolio-box" target="_blank">'+
+      //       '<img src="'+image_url+'" '+
+      //         'class="img-responsive" alt="">'+
+      //       '<div class="portfolio-box-caption">'+
+      //         '<div class="portfolio-box-caption-content">'+
+      //           '<div class="restaurant-name">'+
+      //               name+' '+prediction+
+      //           '</div>'+
+      //           '<div class="restaurant-city text-faded">'
+      // );
+      // $.each(location, function(i, location_line) {
+      //   html += '<div class="address">'+location_line+'</div>'
+      // })
+      // html += (
+      //           '</div>'+
+      //         '</div>'+
+      //       '</div>'+
+      //     '</a>'+
+      //   '</div>'
+      // )
+
       var html = (
-        '<div class="col-xs-6 col-sm-4 col-lg-2">'+
-          '<a href="'+url+'" class="portfolio-box" target="_blank">'+
-            '<img src="'+image_url+'" '+
-              'class="img-responsive" alt="">'+
-            '<div class="portfolio-box-caption">'+
-              '<div class="portfolio-box-caption-content">'+
-                '<div class="restaurant-name">'+
-                    name+' '+prediction+
-                '</div>'+
-                '<div class="restaurant-city text-faded">'
+        '<div class="row">'+
+          '<div class="col-xs-12 col-sm-2 vcenter cell rating-img-div">'
       );
+      if (typeof image_url != 'undefined' && image_url != '') {
+          html += '<img class="rating-img" src="'+image_url+'" />'
+      }
+      html += (
+          '</div>' +
+          '<div class="col-xs-12 col-sm-6 vcenter cell">'+
+            k+' <a href="'+url+'" class="restaurant-name-link" target="_blank">'+
+              name+'</a><br />'+
+            'prediction = '+prediction+'<br />'+
+            'rating = '+rating+'('+num_ratings+')<br />'+
+            'item_bias = '+item_bias+
+          '</div>'+
+          '<div class="col-xs-12 col-sm-4 vcenter cell">'
+      )
       $.each(location, function(i, location_line) {
         html += '<div class="address">'+location_line+'</div>'
       })
       html += (
-                '</div>'+
-              '</div>'+
-            '</div>'+
-          '</a>'+
+          '</div>'+
         '</div>'
       )
 
