@@ -26,7 +26,7 @@ def save_discount_factor(ratings_df):
         .select(
             F.col('item'),
             F.col('count').alias('num_ratings'),
-            (1 - (1 / F.pow(F.col('count'), 0.5))).alias('discount_factor')
+            (1 - (0.2 / F.sqrt(F.col('count')))).alias('discount_factor')
         )
     )
 
@@ -38,13 +38,14 @@ def save_discount_factor(ratings_df):
 
 
 def train_and_save_model_data(ratings_df):
-    lambda_1 = 0.5
+    lambda_1 = 0.25
     lambda_2 = 0.5
+    lambda_3 = 0.2
     useALS = True
     useBias = True
-    rank = 75
+    rank = 8
     regParam = 0.7
-    maxIter = 5
+    maxIter = 10
     nonnegative = False
     implicitPrefs = False
 

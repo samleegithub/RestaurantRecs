@@ -164,7 +164,7 @@ def make_new_user_predictions(user_ratings_df):
 
     new_prediction_df = spark.createDataFrame(
         zip(item_ids.tolist(), new_predictions.tolist()),
-        ['item', 'prediction']
+        ['item', 'res_prediction']
     )
 
     new_predicted_rating_df = (
@@ -175,13 +175,13 @@ def make_new_user_predictions(user_ratings_df):
         .withColumn(
             'prediction',
             (
-                F.col('prediction')
+                F.col('res_prediction')
                 + F.col('avg_rating')
                 + F.col('item_bias')
                 - 5.0
             ) 
-            # * F.col('discount_factor')
-            * (1 - (1 / F.pow(F.col('num_ratings'), 0.5)))
+            * F.col('discount_factor')
+            # * (1 - (0.2 / F.sqrt(F.col('num_ratings'))))
         )
     )
 
@@ -266,6 +266,7 @@ def recommend():
             'rating': row['rating'],
             'num_ratings': row['num_ratings'],
             'item_bias': row['item_bias'],
+            'res_prediction': row['res_prediction'],
             'categories': row['categories']
         }
 

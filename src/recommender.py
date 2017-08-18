@@ -27,6 +27,10 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
                      + "for user bias",
                      typeConverter=TypeConverters.toFloat)
 
+    lambda_3 = Param(Params._dummy(), "lambda_3", "regularization parameter "
+                     + "to prevent items with low rating count from being highly recommended",
+                     typeConverter=TypeConverters.toFloat)
+
     rank = Param(Params._dummy(), "rank", "rank of the factorization",
                  typeConverter=TypeConverters.toInt)
 
@@ -75,7 +79,8 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
 
     @keyword_only
-    def __init__(self, useALS=True, useBias=True, lambda_1=25, lambda_2=10, rank=10,
+    def __init__(self, useALS=True, useBias=True, lambda_1=0.5, lambda_2=0.5,
+                 lambda_3=0.5, rank=10,
                  maxIter=10, regParam=0.1, numUserBlocks=10, numItemBlocks=10,
                  implicitPrefs=False, alpha=1.0, userCol="user",
                  itemCol="item", seed=None, ratingCol="rating",
@@ -94,7 +99,8 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         None
         '''
         super(Recommender, self).__init__()
-        self._setDefault(useALS=True, useBias=True, lambda_1=25, lambda_2=10, rank=10,
+        self._setDefault(useALS=True, useBias=True, lambda_1=0.5, lambda_2=0.5,
+                         lambda_3=0.5, rank=10,
                          maxIter=10, regParam=0.1, numUserBlocks=10,
                          numItemBlocks=10, implicitPrefs=False, alpha=1.0,
                          userCol="user", itemCol="item", ratingCol="rating",
@@ -108,7 +114,8 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
 
     @keyword_only
-    def setParams(self, useALS=True, useBias=True, lambda_1=25, lambda_2=10, rank=10,
+    def setParams(self, useALS=True, useBias=True, lambda_1=0.5, lambda_2=0.5,
+                  lambda_3=0.5, rank=10,
                   maxIter=10, regParam=0.1, numUserBlocks=10, numItemBlocks=10,
                   implicitPrefs=False, alpha=1.0, userCol="user",
                   itemCol="item", seed=None, ratingCol="rating",
@@ -147,7 +154,7 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
     def setLambda_1(self, value):
         """
-        Sets the value of :py:attr:`rank`.
+        Sets the value of :py:attr:`lambda_1`.
         """
         return self._set(lambda_1=value)
 
@@ -159,7 +166,7 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
     def setLambda_2(self, value):
         """
-        Sets the value of :py:attr:`rank`.
+        Sets the value of :py:attr:`lambda_2`.
         """
         return self._set(lambda_2=value)
 
@@ -168,6 +175,18 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         Gets the value of rank or its default value.
         """
         return self.getOrDefault(self.lambda_2)
+
+    def setLambda_3(self, value):
+        """
+        Sets the value of :py:attr:`lambda_3`.
+        """
+        return self._set(lambda_3=value)
+
+    def getLambda_3(self):
+        """
+        Gets the value of rank or its default value.
+        """
+        return self.getOrDefault(self.lambda_3)
 
     def setRank(self, value):
         """
@@ -365,16 +384,12 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
             .withColumn(
                 'item_bias',
                 F.col('avg_diffs')
-                * (
-                    1 - (
-                        self.getLambda_1()
-                        / F.pow(F.col('ct'), 0.5)
-                    )
-                )
+                * (1 - (self.getLambda_1() / F.sqrt(F.col('ct'))))
             )
             .select(
                 self.getItemCol(),
-                'item_bias'
+                'item_bias',
+                F.col('ct').alias('item_rating_count')
             )
         )
 
@@ -394,12 +409,7 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
             .withColumn(
                 'user_bias',
                 F.col('avg_diffs')
-                * (
-                    1 - (
-                        self.getLambda_2()
-                        / F.pow(F.col('ct'), 0.5)
-                    )
-                )
+                * (1 - (self.getLambda_2() / F.sqrt(F.col('ct'))))
             )
             .select(
                 self.getUserCol(),
@@ -470,7 +480,7 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
         return(
             RecommenderModel(
-                self.getUseALS(), self.getUseBias(),
+                self.getUseALS(), self.getUseBias(), self.getLambda_3(),
                 # self.getColdStartStrategy(),
                 recommender, avg_rating_df,
                 user_bias_df, item_bias_df
@@ -479,13 +489,14 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
 
 class RecommenderModel(Model):
-    def __init__(self, useALS, useBias, 
+    def __init__(self, useALS, useBias, lambda_3,
                  # coldStartStrategy,
                  recommender,
                  avg_rating_df, user_bias_df, item_bias_df):
         super(RecommenderModel, self).__init__()
         self.useALS = useALS
         self.useBias = useBias
+        self.lambda_3 = lambda_3
         # self.coldStartStrategy = coldStartStrategy
         self.recommender = recommender
         self.avg_rating_df = avg_rating_df
@@ -568,11 +579,14 @@ class RecommenderModel(Model):
                     })
                     .withColumn(
                         'prediction',
-                        F.col('prediction')
-                        + F.col('avg_rating')
-                        + F.col('user_bias')
-                        + F.col('item_bias')
-                        - 5.0
+                        (
+                            F.col('prediction')
+                            + F.col('avg_rating')
+                            + F.col('user_bias')
+                            + F.col('item_bias')
+                            - 5.0
+                        )
+                        * (1 - (self.lambda_3 / F.sqrt(F.col('item_rating_count'))))
                     )
                     .select(
                         'user',

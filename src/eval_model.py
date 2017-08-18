@@ -67,7 +67,7 @@ class NDCG10Evaluator(object):
         ) a on a.user = p.user
         '''
         )
-        return score_df.collect()[0][0]
+        return score_df.head()[0]
 
     def isLargerBetter(self):
         return False
@@ -115,7 +115,7 @@ class NDCGEvaluator(object):
         )
         '''
         )
-        return score_df.collect()[0][0]
+        return score_df.head()[0]
 
     def isLargerBetter(self):
         return False
@@ -145,7 +145,7 @@ class TopQuantileEvaluator(object):
             ) x on p.user = x.user and p.prediction >= x.95_percentile
             '''
         )
-        return score_df.collect()[0][0]
+        return score_df.head()[0]
 
     def isLargerBetter(self):
         return False
@@ -155,12 +155,13 @@ def cv_grid_search(train_df, test_df):
     estimator = Recommender(
         useALS=True,
         useBias=True,
-        lambda_1=0.5,
+        lambda_1=0.25,
         lambda_2=0.5,
+        lambda_3=0.2,
         userCol='user',
         itemCol='item',
         ratingCol='rating',
-        rank=10,
+        rank=8,
         regParam=0.7,
         maxIter=10,
         nonnegative=False
@@ -179,12 +180,11 @@ def cv_grid_search(train_df, test_df):
 
     paramGrid = (
         ParamGridBuilder()
-        # .addGrid(estimator.lambda_1, [0, 0.5, 1])
-        # .addGrid(estimator.lambda_2, [0, 0.5, 1])
-        .addGrid(estimator.rank, [5, 10, 20, 40])
-        # .addGrid(estimator.regParam, [0.001, 0.0025, 0.005, 0.00625, 0.0075, 0.00875])
-        # .addGrid(estimator.regParam, [0.56, 0.625, 0.7])
-        # .addGrid(estimator.regParam, [0.5, 0.6, 0.7, 0.8, 0.9])
+        # .addGrid(estimator.lambda_1, [0.4, 0.5, 0.75, 1])
+        # .addGrid(estimator.lambda_2, [0, 0.25, 0.5, 0.75, 1])
+        # .addGrid(estimator.lambda_3, [0, 0.2, 0.4])
+        # .addGrid(estimator.rank, [2, 4, 8, 16, 32])
+        .addGrid(estimator.regParam, [0.5, 0.6, 0.7, 0.8, 0.9])
         # .addGrid(estimator.maxIter, [5, 10, 15])
         # .addGrid(estimator.nonnegative, [True, False])
         .build()
@@ -622,9 +622,9 @@ def print_counts(ratings_df, label):
     print('[{}] Num restaurants: {}'
         .format(label, ratings_df.groupBy('item').count().count()))
     print('[{}] Avg num ratings per user: {}'
-        .format(label, ratings_df.groupBy('user').count().agg(F.avg('count')).collect()[0][0]))
+        .format(label, ratings_df.groupBy('user').count().agg(F.avg('count')).head()[0]))
     print('[{}] Avg num ratings per restaurant: {}'
-        .format(label, ratings_df.groupBy('item').count().agg(F.avg('count')).collect()[0][0]))
+        .format(label, ratings_df.groupBy('item').count().agg(F.avg('count')).head()[0]))
 
 
 def print_avg_predictions(predictions_df, label):
@@ -635,7 +635,7 @@ def print_avg_predictions(predictions_df, label):
             F.stddev('rating').alias('stddev_rating'),
             F.avg('prediction').alias('avg_prediction'),
             F.stddev('prediction').alias('stddev_prediction')
-        ).collect()[0]
+        ).head()
     )
     print('[{} Prediction] Rating Avg: {} Stddev: {}'
         .format(label, result_row[0], result_row[1]))
@@ -646,13 +646,20 @@ def print_avg_predictions(predictions_df, label):
 def main():
 
     # Load restaurant reviews
-    ratings_df = spark.read.parquet('../data/ratings')
+    # ratings_df = spark.read.parquet('../data/ratings')
+    # ratings_df = spark.read.parquet('../data/ratings_ugt1_igt1')
+    # ratings_df = spark.read.parquet('../data/ratings_ugt5_igt5')
+    ratings_df = spark.read.parquet('../data/ratings_ugt10_igt10')
+
+    ratings_df1, ratings_df2 = ratings_df.randomSplit(weights=[0.5, 0.5])
 
     # Randomly split data into train and test datasets
-    train_df, test_df = ratings_df.randomSplit(weights=[0.5, 0.5])
+    train_df, test_df = ratings_df1.randomSplit(weights=[0.8, 0.2])
 
     # print(ratings_df.printSchema())
     print_counts(ratings_df, 'Total')
+    print_counts(ratings_df1, 'Split 1')
+    print_counts(ratings_df2, 'Split 2')
     print_counts(train_df, 'Train')
     print_counts(test_df, 'Test')
 

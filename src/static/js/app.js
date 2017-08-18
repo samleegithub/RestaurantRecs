@@ -255,6 +255,7 @@ function get_recomendations(event) {
     $.each(data, function(k, v) {
       var name = v['name'];
       var prediction = v['prediction']
+      var res_prediction = v['res_prediction']
       var rating = v['rating']
       var num_ratings = v['num_ratings']
       var item_bias = v['item_bias']
@@ -285,7 +286,7 @@ function get_recomendations(event) {
       // )
 
       var html = (
-        '<div class="row">'+
+        '<div class="row recommendation-row">'+
           '<div class="col-xs-12 col-sm-2 vcenter cell rating-img-div">'
       );
       if (typeof image_url != 'undefined' && image_url != '') {
@@ -294,12 +295,13 @@ function get_recomendations(event) {
       html += (
           '</div>' +
           '<div class="col-xs-12 col-sm-6 vcenter cell">'+
-            // k+
+            k+
             ' <a href="'+url+'" class="restaurant-name-link" target="_blank">'+
               name+'</a>'+
-            // '<br />prediction = '+prediction+
-            // '<br />rating = '+rating+'('+num_ratings+')'+
-            // '<br />item_bias = '+item_bias+
+            '<br />prediction = '+prediction+
+            '<br />res_prediction = '+res_prediction+
+            '<br />item_bias = '+item_bias+
+            '<br />rating = '+rating+'('+num_ratings+')'+
           '</div>'+
           '<div class="col-xs-12 col-sm-4 vcenter cell">'
       )
