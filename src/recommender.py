@@ -382,8 +382,8 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         # rating_stats_df.show()
 
         if not self.getUseALS():
-            self.setLambda_1 = 0.0
-            self.setLambda_2 = 0.0
+            self.setLambda_1(0.0)
+            self.setLambda_2(0.0)
 
         item_bias_df = (
             ratings_df
