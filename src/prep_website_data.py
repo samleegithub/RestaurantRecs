@@ -7,6 +7,7 @@ from pyspark.ml.recommendation import ALS
 
 spark = (
     ps.sql.SparkSession.builder
+    .config('spark.executor.memory', '4g')
     # .master("local[8]")
     .appName("prep_website_data")
     .getOrCreate()
@@ -15,27 +16,8 @@ spark = (
 
 def load_ratings():
     # return spark.read.parquet('../data/ratings_ugt10_igt10')
-    # return spark.read.parquet('../data/ratings_ugt1_igt1')
-    return spark.read.parquet('../data/ratings_ugt4_igt4')
-
-
-def save_discount_factor(ratings_df):
-    discount_factor_df = (
-        ratings_df
-        .groupBy('item')
-        .count()
-        .select(
-            F.col('item'),
-            F.col('count').alias('num_ratings'),
-            (1 - (1 / F.sqrt(F.col('count')))).alias('discount_factor')
-        )
-    )
-
-    discount_factor_df.write.parquet(
-        path='../data/discount_factor',
-        mode='overwrite',
-        compression='gzip'
-    )
+    return spark.read.parquet('../data/ratings_ugt1_igt1')
+    # return spark.read.parquet('../data/ratings_ugt4_igt4')
 
 
 def train_and_save_model_data(ratings_df):
@@ -45,7 +27,7 @@ def train_and_save_model_data(ratings_df):
     useALS = True
     useBias = True
     rank = 256
-    regParam = 0.01
+    regParam = 0.1
     maxIter = 10
     nonnegative = False
     implicitPrefs = False
@@ -111,7 +93,7 @@ def train_and_save_model_data(ratings_df):
 
 def main():
     ratings_df = load_ratings()
-    # save_discount_factor(ratings_df)
+
     train_and_save_model_data(ratings_df)
 
 

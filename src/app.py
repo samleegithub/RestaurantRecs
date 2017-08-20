@@ -16,6 +16,7 @@ PORT = 5353
 
 spark = (
     ps.sql.SparkSession.builder
+    .config('spark.executor.memory', '1g')
     # .master("local[8]")
     .appName("webapp")
     .getOrCreate()
@@ -195,7 +196,6 @@ def make_new_user_predictions(user_ratings_df):
         .crossJoin(res_prediction_stats_df)
         .crossJoin(residual_stats_df)
         .join(item_bias_df, on='item')
-        # .join(discount_factor_df, on='item')
         .withColumn(
             'prediction',
             (
@@ -206,7 +206,6 @@ def make_new_user_predictions(user_ratings_df):
                 + F.col('avg_rating')
                 + F.col('item_bias')
             ) 
-            # * F.col('discount_factor')
             # * (1 - (1 / F.sqrt(F.col('count_item_rating'))))
         )
     )

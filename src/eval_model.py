@@ -1,4 +1,6 @@
 from recommender import Recommender
+from model_evaluators import NDCG10Evaluator, NDCGEvaluator, TopQuantileEvaluator
+from ratings_helper_functions import print_ratings_counts, print_avg_predictions
 # from bias_als import BiasALS
 import numpy as np
 import pyspark as ps
@@ -12,144 +14,11 @@ plt.style.use('ggplot')
 
 spark = (
     ps.sql.SparkSession.builder
+    .config('spark.executor.memory', '2g')
     # .master("local[8]")
     .appName("eval_model")
     .getOrCreate()
 )
-
-
-class NDCG10Evaluator(object):
-    """
-    Implementation of NDCG scoring method
-    https://en.wikipedia.org/wiki/Discounted_cumulative_gain
-    """
-    def __init__(self):
-        pass
-
-    def evaluate(self, predictions_df):
-        predictions_df.registerTempTable("predictions_df")
-        score_df = spark.sql(
-        '''
-        select 1 - avg(p.dcg / a.idcg) as ndcg
-        from (
-            select
-                x.user,
-                sum(x.rating / log(2, 1 + x.pred_row_num)) as dcg
-            from (
-                select
-                    user,
-                    rating,
-                    row_number() OVER (
-                        PARTITION BY user
-                        ORDER BY prediction DESC
-                    ) as pred_row_num
-                from predictions_df
-            ) x 
-            where x.pred_row_num <= 10
-            group by x.user
-        ) p
-        join (
-            select
-                x.user,
-                sum(x.rating / log(2, 1 + x.actual_row_num)) as idcg
-            from (
-                select
-                    user,
-                    rating,
-                    row_number() OVER (
-                        PARTITION BY user
-                        ORDER BY rating DESC
-                    ) as actual_row_num
-                from predictions_df
-            ) x 
-            where x.actual_row_num <= 10
-            group by x.user
-        ) a on a.user = p.user
-        '''
-        )
-        return score_df.head()[0]
-
-    def isLargerBetter(self):
-        return False
-
-
-class NDCGEvaluator(object):
-    """
-    Implementation of NDCG scoring method
-    https://en.wikipedia.org/wiki/Discounted_cumulative_gain
-    """
-    def __init__(self):
-        pass
-
-    def evaluate(self, predictions_df):
-        predictions_df.registerTempTable("predictions_df")
-        score_df = spark.sql(
-        '''
-        select 1 - avg(ndcg) as avg_ndcg
-        from (
-            select
-                user,
-                sum(dcg) / sum(idcg) as ndcg
-            from (
-                select
-                    user,
-                    rating / log(
-                        2,
-                        1 + row_number()
-                        OVER (
-                            PARTITION BY user
-                            ORDER BY prediction DESC
-                        )
-                    ) as dcg,
-                    rating / log(
-                        2,
-                        1 + row_number()
-                        OVER (
-                            PARTITION BY user
-                            ORDER BY rating DESC
-                        )
-                    ) as idcg
-                from predictions_df
-            ) x
-            group by user
-        )
-        '''
-        )
-        return score_df.head()[0]
-
-    def isLargerBetter(self):
-        return False
-
-
-class TopQuantileEvaluator(object):
-    """
-    Look at 5% of most highly predicted restaurants for each user.
-    Return the average actual rating of those restaurants.
-    """
-    def __init__(self):
-        pass
-
-    def evaluate(self, predictions_df):
-        predictions_df.registerTempTable("predictions_df")
-        score_df = spark.sql(
-            '''
-            select
-                5.0 - avg(p.rating) as score
-            from predictions_df p
-            join (
-                select
-                    user,
-                    percentile_approx(prediction, 0.95) as 95_percentile
-                from predictions_df
-                group by user
-            ) x on p.user = x.user and p.prediction >= x.95_percentile
-            '''
-        )
-        return score_df.head()[0]
-
-    def isLargerBetter(self):
-        return False
-
 
 def cv_grid_search(ratings_df):
 
@@ -158,10 +27,10 @@ def cv_grid_search(ratings_df):
     # Randomly split data into train and test datasets
     train_df, test_df = ratings_df1.randomSplit(weights=[0.833, 0.167])
 
-    print_counts(ratings_df1, 'Split 1')
-    print_counts(ratings_df2, 'Split 2')
-    print_counts(train_df, 'Train')
-    print_counts(test_df, 'Test')
+    print_ratings_counts(ratings_df1, 'Split 1')
+    print_ratings_counts(ratings_df2, 'Split 2')
+    print_ratings_counts(train_df, 'Train')
+    print_ratings_counts(test_df, 'Test')
 
     estimator = Recommender(
         useALS=True,
@@ -322,10 +191,10 @@ def get_baseline_scores(train_df, val_df, evaluator, eval_name):
 
 def plot_scores(train_df):
 
-    best_rank_so_far = 256
-    best_regParam_so_far = 0.01
-    lambda_1 = 0.5
-    lambda_2 = 0.5
+    best_rank_so_far = 250
+    best_regParam_so_far = 0.001
+    lambda_1 = 2
+    lambda_2 = 2
     lambda_3 = 0.0
     nonnegative = False
     maxIter = 10
@@ -362,8 +231,8 @@ def plot_scores(train_df):
 
     train_df, val_df = train_df.randomSplit(weights=[0.5, 0.5])
 
-    print_counts(train_df, 'plot_scores Train')
-    print_counts(val_df, 'plot_scores Validation')
+    print_ratings_counts(train_df, 'plot_scores Train')
+    print_ratings_counts(val_df, 'plot_scores Validation')
 
 
     # First get baseline scores with ALS turned off
@@ -594,8 +463,8 @@ def eval_model(ratings_df):
     # Randomly split data into train and test datasets
     train_df, test_df = ratings_df.randomSplit(weights=[0.5, 0.5])
 
-    print_counts(train_df, 'Train')
-    print_counts(test_df, 'Test')
+    print_ratings_counts(train_df, 'Train')
+    print_ratings_counts(test_df, 'Test')
 
     estimator = Recommender(
         useALS=True,
@@ -663,45 +532,16 @@ def eval_model(ratings_df):
     print("Test NDCG10: {}".format(test_ndcg10))
 
 
-def print_counts(ratings_df, label):
-    print('[{}] Num total ratings: {}'
-        .format(label, ratings_df.count()))
-    print('[{}] Num users: {}'
-        .format(label, ratings_df.groupBy('user').count().count()))
-    print('[{}] Num restaurants: {}'
-        .format(label, ratings_df.groupBy('item').count().count()))
-    print('[{}] Avg num ratings per user: {}'
-        .format(label, ratings_df.groupBy('user').count().agg(F.avg('count')).head()[0]))
-    print('[{}] Avg num ratings per restaurant: {}'
-        .format(label, ratings_df.groupBy('item').count().agg(F.avg('count')).head()[0]))
-
-
-def print_avg_predictions(predictions_df, label):
-    result_row = (
-        predictions_df
-        .agg(
-            F.avg('rating').alias('avg_rating'),
-            F.stddev('rating').alias('stddev_rating'),
-            F.avg('prediction').alias('avg_prediction'),
-            F.stddev('prediction').alias('stddev_prediction')
-        ).head()
-    )
-    print('[{} Prediction] Rating Avg: {} Stddev: {}'
-        .format(label, result_row[0], result_row[1]))
-    print('[{} Prediction] Prediction Avg: {} Stddev: {}'
-        .format(label, result_row[2], result_row[3]))
-
-
 def main():
 
     # Load restaurant reviews
     # ratings_df = spark.read.parquet('../data/ratings')
-    ratings_df = spark.read.parquet('../data/ratings_ugt1_igt1')
+    # ratings_df = spark.read.parquet('../data/ratings_ugt1_igt1')
     # ratings_df = spark.read.parquet('../data/ratings_ugt5_igt5')
-    # ratings_df = spark.read.parquet('../data/ratings_ugt10_igt10')
+    ratings_df = spark.read.parquet('../data/ratings_ugt10_igt10')
 
     # print(ratings_df.printSchema())
-    print_counts(ratings_df, 'Total')
+    print_ratings_counts(ratings_df, 'Total')
 
     # cv_grid_search(ratings_df)
     
