@@ -1,5 +1,5 @@
 from recommender import Recommender
-from model_evaluation import NDCG10Evaluator, NDCGEvaluator, TopQuantileEvaluator
+from model_evaluators import NDCG10Evaluator, NDCGEvaluator, TopQuantileEvaluator
 from ratings_helper_functions import print_ratings_counts, print_avg_predictions
 import numpy as np
 import pyspark as ps
@@ -48,10 +48,10 @@ def loguniform_int(name, lower, upper):
 def setup_parameter_space():
     parameter_space = {
         'rank': uniform_int('rank', 1, 250),
-        'regParam': hp.loguniform('regParam', 0.001, 1),
+        'regParam': hp.loguniform('regParam', np.log(0.0001), np.log(2)),
         'lambda_1': hp.uniform('lambda_1', 0, 10),
-        'lambda_2': hp.uniform('lambda_1', 0, 10),
-        'maxIter': hp.uniform_int('maxIter', 1, 15)
+        'lambda_2': hp.uniform('lambda_2', 0, 10),
+        'maxIter': uniform_int('maxIter', 1, 15)
     }
 
     return parameter_space
