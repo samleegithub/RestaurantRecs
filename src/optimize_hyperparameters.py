@@ -32,6 +32,9 @@ print_ratings_counts(ratings_df, 'Total')
 
 train_df, test_df = ratings_df.randomSplit(weights=[0.5, 0.5])
 
+print_ratings_counts(train_df, 'Train')
+print_ratings_counts(test_df, 'Test')
+
 
 def uniform_int(name, lower, upper):
     # `quniform` returns:
