@@ -16,7 +16,7 @@ PORT = 5353
 
 spark = (
     ps.sql.SparkSession.builder
-    .config('spark.executor.memory', '1g')
+    .config('spark.executor.memory', '2g')
     # .master("local[8]")
     .appName("webapp")
     .getOrCreate()
