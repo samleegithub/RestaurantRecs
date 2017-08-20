@@ -7,7 +7,7 @@ from pyspark.ml.recommendation import ALS
 
 spark = (
     ps.sql.SparkSession.builder
-    .config('spark.executor.memory', '4g')
+    .config('spark.executor.memory', '8g')
     # .master("local[8]")
     .appName("prep_website_data")
     .getOrCreate()
