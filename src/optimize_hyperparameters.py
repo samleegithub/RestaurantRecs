@@ -96,7 +96,7 @@ def eval_model(parameters):
 
     score = evaluator.evaluate(predictions_df)
 
-    print('score: {}'.format(score))
+    print('score: {}\n'.format(score))
 
     return score
 
