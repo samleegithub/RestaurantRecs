@@ -363,65 +363,119 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         #                        'avg_rating')
         # )
 
-        avg_rating_df = (
+        print('Fit starting!')
+
+        start_time = time.monotonic()
+
+        # print('ratings_df')
+        # ratings_df.show()
+
+        rating_stats_df = (
             ratings_df
             .agg(
-                F.avg(self.getRatingCol()).alias('avg_rating')
+                F.avg(self.getRatingCol()).alias('avg_rating'),
+                F.stddev_samp(self.getRatingCol()).alias('stddev_rating')
             )
         )
 
+        # print('ratings_stats_df:')
+        # rating_stats_df.show()
+
+        if not self.getUseALS():
+            self.setLambda_1 = 0.0
+            self.setLambda_2 = 0.0
+
         item_bias_df = (
             ratings_df
-            .crossJoin(avg_rating_df)
+            .crossJoin(rating_stats_df)
+            .withColumn(
+                'diffs_item_rating',
+                F.col(self.getRatingCol()) - F.col('avg_rating')
+            )
             .groupBy(self.getItemCol())
             .agg(
-                F.avg(
-                    F.col(self.getRatingCol()) 
-                    - F.col('avg_rating')
-                ).alias('avg_diffs'),
-                F.count("*").alias('ct')
+                F.avg(F.col('diffs_item_rating')).alias('avg_diffs_item_rating'),
+                F.nanvl(
+                    F.stddev_samp(F.col('diffs_item_rating')),
+                    F.lit(2.147483647E9)
+                ).alias('stddev_diffs_item_rating'),
+                F.count("*").alias('count_item_rating')
+            )
+            .withColumn(
+                'stderr_diffs_item_rating',
+                F.col('stddev_diffs_item_rating') / F.sqrt('count_item_rating')
             )
             .withColumn(
                 'item_bias',
-                F.col('avg_diffs')
-                * (1 - (self.getLambda_1() / F.sqrt(F.col('ct'))))
+                F.col('avg_diffs_item_rating')
+                / (1 + self.getLambda_1() * F.col('stderr_diffs_item_rating'))
             )
             .select(
                 self.getItemCol(),
                 'item_bias',
-                F.col('ct').alias('item_rating_count')
+                'avg_diffs_item_rating',
+                'stderr_diffs_item_rating',
+                'stddev_diffs_item_rating',
+                'count_item_rating'
             )
         )
 
+        # print('item_bias_df:')
+        # item_bias_df.show(5)
+
+        # item_bias_df.printSchema()
+
+        # print('item_bias_df NaN')
+        # item_bias_df.where(F.isnan("item_bias")).show()
+
         user_bias_df = (
             ratings_df
-            .crossJoin(avg_rating_df)
+            .crossJoin(rating_stats_df)
             .join(item_bias_df, on=self.getItemCol())
+            .withColumn(
+                'diffs_user_rating',
+                F.col(self.getRatingCol()) - F.col('avg_rating') - F.col('item_bias')
+            )
             .groupBy(self.getUserCol())
             .agg(
-                F.avg(
-                    F.col(self.getRatingCol())
-                    - F.col('avg_rating')
-                    - F.col('item_bias')
-                ).alias('avg_diffs'),
-                F.count("*").alias('ct')
-            )            
+                F.avg(F.col('diffs_user_rating')).alias('avg_diffs_user_rating'),
+                F.nanvl(
+                    F.stddev_samp(F.col('diffs_user_rating')),
+                    F.lit(2.147483647E9)
+                ).alias('stddev_diffs_user_rating'),
+                F.count("*").alias('count_user_rating')
+            )
+            .withColumn(
+                'stderr_diffs_user_rating',
+                F.col('stddev_diffs_user_rating') / F.sqrt('count_user_rating')
+            )
             .withColumn(
                 'user_bias',
-                F.col('avg_diffs')
-                * (1 - (self.getLambda_2() / F.sqrt(F.col('ct'))))
+                F.col('avg_diffs_user_rating')
+                / (1 + self.getLambda_2() * F.col('stderr_diffs_user_rating')
+                )
             )
             .select(
                 self.getUserCol(),
-                'user_bias'
+                'user_bias',
+                'avg_diffs_user_rating',
+                'stderr_diffs_user_rating',
+                'stddev_diffs_user_rating',
+                'count_user_rating'
             )
         )
+
+        # print('user_bias_df:')
+        # user_bias_df.show(5)
+
+        # print('user_bias_df NaN')
+        # user_bias_df.where(F.isnan("user_bias")).show()
 
         if self.getUseALS():
             if self.getUseBias():
                 residual_df = (
                     ratings_df
-                    .crossJoin(avg_rating_df)
+                    .crossJoin(rating_stats_df)
                     .join(user_bias_df, on=self.getUserCol())
                     .join(item_bias_df, on=self.getItemCol())
                     .withColumn(
@@ -430,7 +484,6 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
                         - F.col('avg_rating')
                         - F.col('user_bias')
                         - F.col('item_bias')
-                        + 5.0
                     )
                     .select(
                         self.getUserCol(),
@@ -438,9 +491,27 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
                         self.getRatingCol()
                     )
                 )
+
             else:
                 residual_df = ratings_df
                 # self.setColdStartStrategy('drop')
+
+            residual_stats_df = (
+                residual_df
+                .agg(
+                    F.avg(F.col(self.getRatingCol())).alias('avg_residual'),
+                    F.stddev(F.col(self.getRatingCol())).alias('stddev_residual')
+                )
+            )
+
+            # print('residual_df')
+            # residual_df.show()
+
+            # print('residual_df NaN')
+            # residual_df.where(F.isnan("rating")).show()
+
+            # print('residual_stats_df')
+            # residual_stats_df.show()
 
             als_model = ALS(
                 rank=self.getRank(),
@@ -461,28 +532,17 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 
             recommender = als_model.fit(residual_df)
 
-            # residual_stats = (
-            #     residual_df
-            #     .agg(
-            #         F.min('rating').alias('min_residual'),
-            #         F.max('rating').alias('max_residual'),
-            #         F.avg('rating').alias('avg_residual')
-            #     )
-            #     .collect()
-            # )
-
-            # print(residual_stats)
-
         else:
-            # print('Fit without ALS!')
             recommender = None
+            residual_stats_df = None
 
+        print('Fit done in {} seconds'.format(time.monotonic() - start_time))
 
         return(
             RecommenderModel(
                 self.getUseALS(), self.getUseBias(), self.getLambda_3(),
                 # self.getColdStartStrategy(),
-                recommender, avg_rating_df,
+                recommender, rating_stats_df, residual_stats_df,
                 user_bias_df, item_bias_df
             )
         )
@@ -491,15 +551,16 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
 class RecommenderModel(Model):
     def __init__(self, useALS, useBias, lambda_3,
                  # coldStartStrategy,
-                 recommender,
-                 avg_rating_df, user_bias_df, item_bias_df):
+                 recommender, rating_stats_df, residual_stats_df,
+                 user_bias_df, item_bias_df):
         super(RecommenderModel, self).__init__()
         self.useALS = useALS
         self.useBias = useBias
         self.lambda_3 = lambda_3
         # self.coldStartStrategy = coldStartStrategy
         self.recommender = recommender
-        self.avg_rating_df = avg_rating_df
+        self.rating_stats_df = rating_stats_df
+        self.residual_stats_df = residual_stats_df
         self.user_bias_df = user_bias_df
         self.item_bias_df = item_bias_df
 
@@ -560,50 +621,95 @@ class RecommenderModel(Model):
 
         Returns
         =======
-        predictions_df      (pyspark.sql.DataFrame) Predictions with 'user',
+        final_prediction_df (pyspark.sql.DataFrame) Predictions with 'user',
                             'item' and 'prediction'. Prediction will be a 
                             floating point number.
 
         '''
+
+        print('Transform starting!')
+
+        start_time = time.monotonic()
+
         if self.useALS:
+            self.prediction_df = self.recommender.transform(requests_df)
+
+            self.prediction_stats_df = (
+                self.prediction_df
+                .dropna(how='all', subset=['prediction'])
+                .agg(
+                    F.avg(F.col('prediction')).alias('avg_prediction'),
+                    F.stddev_samp(F.col('prediction')).alias('stddev_prediction')
+                )
+            )
+
+            # print('prediction_df')
+            # self.prediction_df.show()
+
+            # print('prediction_stats_df')
+            # self.prediction_stats_df.show()
+
+            # print('rating_stats_df')
+            # self.rating_stats_df.show()
+
+            # print('residual_stats_df')
+            # self.residual_stats_df.show()
+
             if self.useBias:
-                return(
-                    self.recommender.transform(requests_df)
-                    .crossJoin(self.avg_rating_df)
+                final_prediction_df = (
+                    self.prediction_df
+                    .crossJoin(self.rating_stats_df)
+                    .crossJoin(self.prediction_stats_df)
+                    .crossJoin(self.residual_stats_df)
                     .join(self.user_bias_df, on='user')
                     .join(self.item_bias_df, on='item')
                     .fillna({
-                        'prediction': 5.0,
                         'user_bias': 0.0,
                         'item_bias': 0.0
                     })
                     .withColumn(
                         'prediction',
                         (
-                            F.col('prediction')
+                            F.coalesce(
+                                F.col('prediction') - F.col('avg_prediction'),
+                                F.lit(0.0)
+                            )
+                            * F.col('stddev_residual')
+                            / F.col('stddev_prediction')
+                            + F.col('avg_residual')
                             + F.col('avg_rating')
                             + F.col('user_bias')
                             + F.col('item_bias')
-                            - 5.0
                         )
-                        * (1 - (self.lambda_3 / F.sqrt(F.col('item_rating_count'))))
+                        # * (1 - (self.lambda_3 / F.sqrt(F.col('count_item_rating'))))
                     )
-                    .select(
+                   .select(
                         'user',
                         'item',
                         'rating',
                         'prediction'
                     )
                 )
+
             else:
-                return(
-                    self.recommender.transform(requests_df)
+                final_prediction_df = (
+                    self.prediction_df
                     .dropna(how='all', subset=['prediction'])
+                    # .fillna({'prediction': F.col('avg_prediction')})
+                    .crossJoin(self.residual_stats_df)
+                    .crossJoin(self.prediction_stats_df)
+                    .withColumn(
+                        'prediction',
+                        (F.col('prediction') - F.col('avg_prediction'))
+                        * F.col('stddev_residual')
+                        / F.col('stddev_prediction')
+                        + F.col('avg_residual')
+                    )
                 )
         else:
-            return(
+            final_prediction_df = (
                 requests_df
-                .crossJoin(self.avg_rating_df)
+                .crossJoin(self.rating_stats_df)
                 .join(self.user_bias_df, on='user')
                 .join(self.item_bias_df, on='item')
                 .fillna({
@@ -623,3 +729,10 @@ class RecommenderModel(Model):
                     'prediction'
                 )
             )
+
+        print('Transform done in {} seconds'.format(time.monotonic() - start_time))
+
+        # print('final_prediction_df')
+        # final_prediction_df.show()
+
+        return final_prediction_df

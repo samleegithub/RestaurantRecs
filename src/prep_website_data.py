@@ -15,7 +15,8 @@ spark = (
 
 def load_ratings():
     # return spark.read.parquet('../data/ratings_ugt10_igt10')
-    return spark.read.parquet('../data/ratings_ugt1_igt1')
+    # return spark.read.parquet('../data/ratings_ugt1_igt1')
+    return spark.read.parquet('../data/ratings_ugt4_igt4')
 
 
 def save_discount_factor(ratings_df):
@@ -26,7 +27,7 @@ def save_discount_factor(ratings_df):
         .select(
             F.col('item'),
             F.col('count').alias('num_ratings'),
-            (1 - (0.2 / F.sqrt(F.col('count')))).alias('discount_factor')
+            (1 - (1 / F.sqrt(F.col('count')))).alias('discount_factor')
         )
     )
 
@@ -38,13 +39,13 @@ def save_discount_factor(ratings_df):
 
 
 def train_and_save_model_data(ratings_df):
-    lambda_1 = 0.25
+    lambda_1 = 0.5
     lambda_2 = 0.5
-    lambda_3 = 0.2
+    lambda_3 = 0.0
     useALS = True
     useBias = True
-    rank = 8
-    regParam = 0.7
+    rank = 256
+    regParam = 0.01
     maxIter = 10
     nonnegative = False
     implicitPrefs = False
@@ -83,8 +84,8 @@ def train_and_save_model_data(ratings_df):
         compression='gzip'
     )
 
-    model.avg_rating_df.write.parquet(
-        path='../data/avg_rating',
+    model.rating_stats_df.write.parquet(
+        path='../data/rating_stats',
         mode='overwrite',
         compression='gzip'
     )
@@ -97,6 +98,12 @@ def train_and_save_model_data(ratings_df):
 
     model.item_bias_df.write.parquet(
         path='../data/item_bias',
+        mode='overwrite',
+        compression='gzip'
+    )
+
+    model.residual_stats_df.write.parquet(
+        path='../data/residual_stats',
         mode='overwrite',
         compression='gzip'
     )
