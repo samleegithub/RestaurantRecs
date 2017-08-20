@@ -25,7 +25,7 @@ spark = (
 restaurants_df = spark.read.parquet('../data/restaurants')
 
 # Load restaurant discount factors
-discount_factor_df = spark.read.parquet('../data/discount_factor')
+# discount_factor_df = spark.read.parquet('../data/discount_factor')
 
 # Load restaurant ids into mapping dataframe
 restaurant_id_map = []
@@ -154,7 +154,13 @@ def get_user_factors(user_ratings_df):
     filtered_item_factors = np.array(filtered_item_factors)
     item_ratings = np.array(item_ratings)
 
-    return np.dot(item_ratings, filtered_item_factors) / sum(item_ratings)
+    print('filtered_item_factors')
+    print(filtered_item_factors)
+
+    print('item_ratings')
+    print(item_ratings)
+
+    return np.dot(item_ratings, filtered_item_factors) # / sum(item_ratings)
 
 
 def make_new_user_predictions(user_ratings_df):
@@ -169,7 +175,10 @@ def make_new_user_predictions(user_ratings_df):
         ['item', 'res_prediction']
     )
 
-    prediction_stats_df = (
+    print('prediction_df')
+    prediction_df.show()
+
+    res_prediction_stats_df = (
         prediction_df
         .agg(
             F.avg(F.col('res_prediction')).alias('avg_prediction'),
@@ -177,26 +186,44 @@ def make_new_user_predictions(user_ratings_df):
         )
     )
 
+    print('res_prediction_stats_df')
+    res_prediction_stats_df.show()
+
     predicted_rating_df = (
         prediction_df
         .crossJoin(rating_stats_df)
-        .crossJoin(prediction_stats_df)
+        .crossJoin(res_prediction_stats_df)
         .crossJoin(residual_stats_df)
         .join(item_bias_df, on='item')
-        .join(discount_factor_df, on='item')
+        # .join(discount_factor_df, on='item')
         .withColumn(
             'prediction',
             (
                 (F.col('res_prediction') - F.col('avg_prediction'))
                 * F.col('stddev_residual')
                 / F.col('stddev_prediction')
+                + F.col('avg_residual')
                 + F.col('avg_rating')
                 + F.col('item_bias')
             ) 
             # * F.col('discount_factor')
-            * (1 - (1 / F.sqrt(F.col('num_ratings'))))
+            # * (1 - (1 / F.sqrt(F.col('count_item_rating'))))
         )
     )
+
+    predicted_rating_stats_df = (
+        predicted_rating_df
+        .agg(
+            F.avg(F.col('prediction')).alias('avg_prediction'),
+            F.stddev_samp(F.col('prediction')).alias('stddev_prediction')
+        )
+    )
+
+    print('predicted_rating_df')
+    predicted_rating_df.show()
+
+    print('predicted_rating_stats_df')
+    predicted_rating_stats_df.show()
 
     return predicted_rating_df
 
@@ -248,7 +275,7 @@ def recommend():
                 | F.lower(F.col('location.zip_code')).like('%{}%'.format(location))
                 | F.lower(F.col('location.state')).like('%{}%'.format(location))
             )
-            # & (F.col('num_ratings') < 100)
+            # & (F.col('count_item_rating') < 100)
         )
         .join(
             user_ratings_df
@@ -277,7 +304,7 @@ def recommend():
             'image_url': row['image_url'],
             'location': row['location'],
             'rating': row['rating'],
-            'num_ratings': row['num_ratings'],
+            'count_item_rating': row['count_item_rating'],
             'item_bias': row['item_bias'],
             'res_prediction': row['res_prediction'],
             'categories': row['categories']

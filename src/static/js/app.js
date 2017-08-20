@@ -257,7 +257,7 @@ function get_recomendations(event) {
       var prediction = v['prediction']
       var res_prediction = v['res_prediction']
       var rating = v['rating']
-      var num_ratings = v['num_ratings']
+      var count_item_rating = v['count_item_rating']
       var item_bias = v['item_bias']
       var image_url = v['image_url'];
       var url = v['url'];
@@ -301,7 +301,7 @@ function get_recomendations(event) {
             '<br />prediction = '+prediction+
             '<br />res_prediction = '+res_prediction+
             '<br />item_bias = '+item_bias+
-            '<br />rating = '+rating+'('+num_ratings+')'+
+            '<br />rating = '+rating+'('+count_item_rating+')'+
           '</div>'+
           '<div class="col-xs-12 col-sm-4 vcenter cell">'
       )

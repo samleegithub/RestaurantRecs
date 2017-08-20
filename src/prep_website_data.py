@@ -111,7 +111,7 @@ def train_and_save_model_data(ratings_df):
 
 def main():
     ratings_df = load_ratings()
-    save_discount_factor(ratings_df)
+    # save_discount_factor(ratings_df)
     train_and_save_model_data(ratings_df)
 
 
