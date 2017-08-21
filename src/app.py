@@ -176,9 +176,6 @@ def make_new_user_predictions(user_ratings_df):
         ['item', 'res_prediction']
     )
 
-    # print('prediction_df')
-    # prediction_df.show()
-
     res_prediction_stats_df = (
         prediction_df
         .agg(
@@ -186,9 +183,6 @@ def make_new_user_predictions(user_ratings_df):
             F.stddev_samp(F.col('res_prediction')).alias('stddev_res_prediction')
         )
     )
-
-    # print('res_prediction_stats_df')
-    # res_prediction_stats_df.show()
 
     predicted_rating_df = (
         prediction_df
@@ -199,14 +193,17 @@ def make_new_user_predictions(user_ratings_df):
         .withColumn(
             'prediction',
             (
-                F.col('res_prediction')
-                - F.col('avg_res_prediction')
+                (
+                    F.col('res_prediction')
+                    # - F.col('avg_res_prediction')
+                )
+                # * F.col('stddev_residual')
+                # / F.col('stddev_res_prediction')
+                # + F.col('avg_residual')
+                # + F.col('avg_rating')
+                + F.col('item_bias')
             )
-            * F.col('stddev_residual')
-            / F.col('stddev_res_prediction')
-            + F.col('avg_residual')
-            # + F.col('avg_rating')
-            + F.col('item_bias')
+            * (1 - 1 / F.sqrt(F.col('count_item_rating')))
         )
         .filter(F.col('prediction') > 0)
     )
@@ -219,11 +216,23 @@ def make_new_user_predictions(user_ratings_df):
         )
     )
 
+    # print('prediction_df')
+    # prediction_df.show()
+
     # print('predicted_rating_df')
     # predicted_rating_df.show()
 
-    # print('predicted_rating_stats_df')
-    # predicted_rating_stats_df.show()
+    print('residual_stats_df')
+    residual_stats_df.show()
+
+    print('res_prediction_stats_df')
+    res_prediction_stats_df.show()
+
+    print('rating_stats_df')
+    rating_stats_df.show()
+
+    print('predicted_rating_stats_df')
+    predicted_rating_stats_df.show()
 
     return predicted_rating_df
 
