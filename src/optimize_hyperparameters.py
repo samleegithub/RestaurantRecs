@@ -24,9 +24,10 @@ spark = (
 
 # Load restaurant reviews
 # ratings_df = spark.read.parquet('../data/ratings')
-ratings_df = spark.read.parquet('../data/ratings_ugt1_igt1')
+# ratings_df = spark.read.parquet('../data/ratings_ugt1_igt1')
 # ratings_df = spark.read.parquet('../data/ratings_ugt5_igt5')
 # ratings_df = spark.read.parquet('../data/ratings_ugt10_igt10')
+ratings_df = spark.read.parquet('../data/ratings_ugt1_igt9')
 
 # print(ratings_df.printSchema())
 print_ratings_counts(ratings_df, 'Total')
