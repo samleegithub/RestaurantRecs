@@ -4,12 +4,12 @@ class NDCG10Evaluator(object):
     Implementation of NDCG scoring method
     https://en.wikipedia.org/wiki/Discounted_cumulative_gain
     """
-    def __init__(self):
-        pass
+    def __init__(self, spark):
+        self.spark = spark
 
     def evaluate(self, predictions_df):
         predictions_df.registerTempTable("predictions_df")
-        score_df = spark.sql(
+        score_df = self.spark.sql(
         '''
         select 1 - avg(p.dcg / a.idcg) as ndcg
         from (
@@ -59,12 +59,12 @@ class NDCGEvaluator(object):
     Implementation of NDCG scoring method
     https://en.wikipedia.org/wiki/Discounted_cumulative_gain
     """
-    def __init__(self):
-        pass
+    def __init__(self, spark):
+        self.spark = spark
 
     def evaluate(self, predictions_df):
         predictions_df.registerTempTable("predictions_df")
-        score_df = spark.sql(
+        score_df = self.spark.sql(
         '''
         select 1 - avg(ndcg) as avg_ndcg
         from (
@@ -107,12 +107,12 @@ class TopQuantileEvaluator(object):
     Look at 5% of most highly predicted restaurants for each user.
     Return the average actual rating of those restaurants.
     """
-    def __init__(self):
-        pass
+    def __init__(self, spark):
+        self.spark = spark
 
     def evaluate(self, predictions_df):
         predictions_df.registerTempTable("predictions_df")
-        score_df = spark.sql(
+        score_df = self.spark.sql(
             '''
             select
                 5.0 - avg(p.rating) as score

@@ -295,13 +295,13 @@ function get_recomendations(event) {
       html += (
           '</div>' +
           '<div class="col-xs-12 col-sm-6 vcenter cell">'+
-            k+
+            // k+
             ' <a href="'+url+'" class="restaurant-name-link" target="_blank">'+
               name+'</a>'+
-            '<br />prediction = '+prediction+
-            '<br />res_prediction = '+res_prediction+
-            '<br />item_bias = '+item_bias+
-            '<br />rating = '+rating+'('+count_item_rating+')'+
+            // '<br />prediction = '+prediction+
+            // '<br />res_prediction = '+res_prediction+
+            // '<br />item_bias = '+item_bias+
+            // '<br />rating = '+rating+'('+count_item_rating+')'+
           '</div>'+
           '<div class="col-xs-12 col-sm-4 vcenter cell">'
       )

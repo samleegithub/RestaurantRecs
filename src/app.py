@@ -16,7 +16,7 @@ PORT = 5353
 
 spark = (
     ps.sql.SparkSession.builder
-    .config('spark.executor.memory', '2g')
+    .config('spark.executor.memory', '1g')
     # .master("local[8]")
     .appName("webapp")
     .getOrCreate()
@@ -155,19 +155,19 @@ def get_user_factors(user_ratings_df):
     filtered_item_factors = np.array(filtered_item_factors)
     item_ratings = np.array(item_ratings)
 
-    print('filtered_item_factors')
-    print(filtered_item_factors)
+    # print('filtered_item_factors')
+    # print(filtered_item_factors)
 
-    print('item_ratings')
-    print(item_ratings)
+    # print('item_ratings')
+    # print(item_ratings)
 
-    return np.dot(item_ratings, filtered_item_factors) # / sum(item_ratings)
+    return np.dot(item_ratings, filtered_item_factors) / len(item_ratings)
 
 
 def make_new_user_predictions(user_ratings_df):
     user_factors = get_user_factors(user_ratings_df)
 
-    print('user_factors: {}'.format(user_factors))
+    # print('user_factors: {}'.format(user_factors))
 
     predictions = np.dot(user_factors, item_factors.T)
 
@@ -176,19 +176,19 @@ def make_new_user_predictions(user_ratings_df):
         ['item', 'res_prediction']
     )
 
-    print('prediction_df')
-    prediction_df.show()
+    # print('prediction_df')
+    # prediction_df.show()
 
     res_prediction_stats_df = (
         prediction_df
         .agg(
-            F.avg(F.col('res_prediction')).alias('avg_prediction'),
-            F.stddev_samp(F.col('res_prediction')).alias('stddev_prediction')
+            F.avg(F.col('res_prediction')).alias('avg_res_prediction'),
+            F.stddev_samp(F.col('res_prediction')).alias('stddev_res_prediction')
         )
     )
 
-    print('res_prediction_stats_df')
-    res_prediction_stats_df.show()
+    # print('res_prediction_stats_df')
+    # res_prediction_stats_df.show()
 
     predicted_rating_df = (
         prediction_df
@@ -199,9 +199,12 @@ def make_new_user_predictions(user_ratings_df):
         .withColumn(
             'prediction',
             (
-                (F.col('res_prediction') - F.col('avg_prediction'))
+                (
+                    F.col('res_prediction')
+                    - F.col('avg_res_prediction')
+                )
                 * F.col('stddev_residual')
-                / F.col('stddev_prediction')
+                / F.col('stddev_res_prediction')
                 + F.col('avg_residual')
                 + F.col('avg_rating')
                 + F.col('item_bias')
@@ -218,11 +221,11 @@ def make_new_user_predictions(user_ratings_df):
         )
     )
 
-    print('predicted_rating_df')
-    predicted_rating_df.show()
+    # print('predicted_rating_df')
+    # predicted_rating_df.show()
 
-    print('predicted_rating_stats_df')
-    predicted_rating_stats_df.show()
+    # print('predicted_rating_stats_df')
+    # predicted_rating_stats_df.show()
 
     return predicted_rating_df
 

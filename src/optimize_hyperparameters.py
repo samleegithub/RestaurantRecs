@@ -51,11 +51,11 @@ def loguniform_int(name, lower, upper):
 
 def setup_parameter_space():
     parameter_space = {
-        'rank': uniform_int('rank', 1, 250),
-        'regParam': hp.loguniform('regParam', np.log(0.0001), np.log(2)),
+        'rank': uniform_int('rank', 1, 100),
+        'regParam': hp.loguniform('regParam', np.log(0.001), np.log(2)),
         'lambda_1': hp.uniform('lambda_1', 0, 10),
         'lambda_2': hp.uniform('lambda_2', 0, 10),
-        'maxIter': uniform_int('maxIter', 1, 15)
+        # 'maxIter': uniform_int('maxIter', 1, 15)
     }
 
     return parameter_space
@@ -70,11 +70,14 @@ def eval_model(parameters):
     regParam = parameters['regParam']
     lambda_1 = parameters['lambda_1']
     lambda_2 = parameters['lambda_2']
-    maxIter = int(parameters['maxIter'])
+    # maxIter = int(parameters['maxIter'])
 
-    eval_name = 'RMSE'
-    evaluator = RegressionEvaluator(
-        metricName="rmse", labelCol="rating", predictionCol="prediction")  
+    # eval_name = 'RMSE'
+    # evaluator = RegressionEvaluator(
+    #     metricName="rmse", labelCol="rating", predictionCol="prediction")  
+
+    eval_name = 'NDCG10'
+    evaluator = NDCG10Evaluator(spark)
 
     estimator = Recommender(
         useALS=True,
@@ -84,7 +87,7 @@ def eval_model(parameters):
         lambda_1=lambda_1,
         lambda_2=lambda_2,
         lambda_3=0,
-        maxIter=maxIter,
+        # maxIter=maxIter,
         userCol='user',
         itemCol='item',
         ratingCol='rating',
@@ -97,7 +100,10 @@ def eval_model(parameters):
 
     score = evaluator.evaluate(predictions_df)
 
-    print('score: {}\n'.format(score))
+    print('=========================================')
+    print('{} score: {}'.format(eval_name, score))
+    print('=========================================')
+    print('')
 
     return score
 

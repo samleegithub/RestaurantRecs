@@ -204,13 +204,13 @@ def plot_scores(train_df):
     implicitPrefs = False
 
     # eval_name = 'NDCG10'
-    # evaluator = NDCG10Evaluator()
+    # evaluator = NDCG10Evaluator(spark)
 
     # eval_name = 'NDCG'
-    # evaluator = NDCGEvaluator()
+    # evaluator = NDCGEvaluator(spark)
 
     # eval_name = 'TopQuantileEvaluator'
-    # evaluator = TopQuantileEvaluator()
+    # evaluator = TopQuantileEvaluator(spark)
 
     eval_name = 'RMSE'
     evaluator = RegressionEvaluator(

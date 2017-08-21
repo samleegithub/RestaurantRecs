@@ -22,14 +22,14 @@ def load_ratings():
 
 
 def train_and_save_model_data(ratings_df):
-    lambda_1 = 0.4993032990785937
-    lambda_2 = 0.754143704958773
+    lambda_1 = 0.5
+    lambda_2 = 0.75
     lambda_3 = 0.0
     useALS = True
     useBias = True
     rank = 81
-    regParam = 0.001735836550439328
-    maxIter = 9
+    regParam = 0.01
+    maxIter = 10
     nonnegative = False
     implicitPrefs = False
 
