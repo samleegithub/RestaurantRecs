@@ -23,11 +23,15 @@ spark = (
 )
 
 # Load restaurant reviews
-# ratings_df = spark.read.parquet('../data/ratings')
-# ratings_df = spark.read.parquet('../data/ratings_ugt1_igt1')
-# ratings_df = spark.read.parquet('../data/ratings_ugt5_igt5')
-# ratings_df = spark.read.parquet('../data/ratings_ugt10_igt10')
-ratings_df = spark.read.parquet('../data/ratings_ugt1_igt9')
+# filename = '../data/ratings'
+# filename = '../data/ratings_ugt1_igt1'
+# filename = '../data/ratings_ugt5_igt5'
+# filename = '../data/ratings_ugt10_igt10'
+filename = '../data/ratings_ugt9_igt9'
+
+print('Ratings filename: {}'.format(filename))
+
+ratings_df = spark.read.parquet(filename)
 
 # print(ratings_df.printSchema())
 print_ratings_counts(ratings_df, 'Total')
@@ -53,7 +57,7 @@ def loguniform_int(name, lower, upper):
 def setup_parameter_space():
     parameter_space = {
         'rank': uniform_int('rank', 1, 100),
-        'regParam': hp.loguniform('regParam', np.log(0.001), np.log(2)),
+        'regParam': hp.loguniform('regParam', np.log(0.001), np.log(1)),
         'lambda_1': hp.uniform('lambda_1', 0, 10),
         'lambda_2': hp.uniform('lambda_2', 0, 10),
         # 'maxIter': uniform_int('maxIter', 1, 15)

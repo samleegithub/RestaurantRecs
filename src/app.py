@@ -199,18 +199,16 @@ def make_new_user_predictions(user_ratings_df):
         .withColumn(
             'prediction',
             (
-                (
-                    F.col('res_prediction')
-                    - F.col('avg_res_prediction')
-                )
-                * F.col('stddev_residual')
-                / F.col('stddev_res_prediction')
-                + F.col('avg_residual')
-                + F.col('avg_rating')
-                + F.col('item_bias')
-            ) 
-            # * (1 - (1 / F.sqrt(F.col('count_item_rating'))))
+                F.col('res_prediction')
+                - F.col('avg_res_prediction')
+            )
+            * F.col('stddev_residual')
+            / F.col('stddev_res_prediction')
+            + F.col('avg_residual')
+            # + F.col('avg_rating')
+            + F.col('item_bias')
         )
+        .filter(F.col('prediction') > 0)
     )
 
     predicted_rating_stats_df = (
@@ -277,7 +275,6 @@ def recommend():
                 | F.lower(F.col('location.zip_code')).like('%{}%'.format(location))
                 | F.lower(F.col('location.state')).like('%{}%'.format(location))
             )
-            # & (F.col('count_item_rating') < 100)
         )
         .join(
             user_ratings_df

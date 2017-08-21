@@ -16,20 +16,24 @@ spark = (
 
 
 def load_ratings():
-    # return spark.read.parquet('../data/ratings_ugt9_igt9')
-    # return spark.read.parquet('../data/ratings_ugt1_igt1')
-    # return spark.read.parquet('../data/ratings_ugt4_igt4')
-    return spark.read.parquet('../data/ratings_ugt1_igt9')
+    # filename = '../data/ratings_ugt9_igt9'
+    # filename = '../data/ratings_ugt1_igt1'
+    # filename = '../data/ratings_ugt4_igt4'
+    filename = '../data/ratings_ugt1_igt9'
+
+    print('Ratings filename: {}'.format(filename))
+
+    return spark.read.parquet(filename)
 
 
 def train_and_save_model_data(ratings_df):
-    lambda_1 = 0.7854414047991587
-    lambda_2 = 7.640976680323403
+    lambda_1 = 0.5
+    lambda_2 = 0.75
     lambda_3 = 0.0
     useALS = True
     useBias = True
-    rank = 85
-    regParam = 0.6762828243456599
+    rank = 100
+    regParam = 0.001
     maxIter = 10
     nonnegative = False
     implicitPrefs = False
