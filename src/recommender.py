@@ -363,7 +363,7 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         #                        'avg_rating')
         # )
 
-        print('Fit starting!')
+        # print('Fit starting!')
 
         start_time = time.monotonic()
 
@@ -627,7 +627,7 @@ class RecommenderModel(Model):
 
         '''
 
-        print('Transform starting!')
+        # print('Transform starting!')
 
         start_time = time.monotonic()
 

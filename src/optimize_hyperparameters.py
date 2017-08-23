@@ -111,12 +111,12 @@ def eval_model(parameters):
     train_predictions_df = model.transform(train_df)
     test_predictions_df = model.transform(test_df)
 
-    print('Train score starting!')
+    # print('Train score starting!')
     start_time = time.monotonic()
     train_score = evaluator.evaluate(train_predictions_df)
     print('Train score done in {} seconds'.format(time.monotonic() - start_time))
 
-    print('Test score starting!')
+    # print('Test score starting!')
     start_time = time.monotonic()
     test_score = evaluator.evaluate(test_predictions_df)
     print('Train score done in {} seconds'.format(time.monotonic() - start_time))

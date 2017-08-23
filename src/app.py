@@ -303,7 +303,7 @@ def recommend():
 
 
     results = {}
-    for i, row in enumerate(prediction_data_df.take(25)):
+    for i, row in enumerate(prediction_data_df.take(10)):
         results[i] = {
             'model_id': row['item'],
             'prediction': row['prediction'],
