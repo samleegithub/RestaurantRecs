@@ -74,11 +74,11 @@ def cv_grid_search(ratings_df):
     # evaluator = RegressionEvaluator(
     #     metricName="rmse", labelCol="rating", predictionCol="prediction")
 
-    # evaluator = TopQuantileEvaluator()
+    # evaluator = TopQuantileEvaluator(spark)
 
-    # evaluator = NDCGEvaluator()
+    # evaluator = NDCGEvaluator(spark)
 
-    evaluator = NDCG10Evaluator()
+    evaluator = NDCG10Evaluator(spark)
 
     cv = CrossValidator(
         estimator=estimator,
@@ -496,7 +496,7 @@ def eval_model(ratings_df):
     evaluator_rmse = RegressionEvaluator(
         metricName="rmse", labelCol="rating", predictionCol="prediction")
 
-    evaluator_ndcg10 = NDCG10Evaluator()
+    evaluator_ndcg10 = NDCG10Evaluator(spark)
 
     start_time = time.monotonic()
     step_start_time = time.monotonic()

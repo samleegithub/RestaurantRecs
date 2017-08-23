@@ -73,38 +73,9 @@ def setup_parameter_space():
     return parameter_space
 
 
-def eval_model(parameters):
-    print("Parameters:")
-    pprint(parameters)
-    print()
-
-    rank = int(parameters['rank'])
-    regParam = parameters['regParam']
-    lambda_1 = parameters['lambda_1']
-    lambda_2 = parameters['lambda_2']
-    # maxIter = int(parameters['maxIter'])
-
-    # eval_name = 'RMSE'
-    # evaluator = RegressionEvaluator(
-    #     metricName="rmse", labelCol="rating", predictionCol="prediction")  
-
-    eval_name = 'NDCG10'
-    evaluator = NDCG10Evaluator(spark)
-
-    estimator = Recommender(
-        useALS=True,
-        useBias=True,
-        rank=rank,
-        regParam=regParam,
-        lambda_1=lambda_1,
-        lambda_2=lambda_2,
-        lambda_3=0.0,
-        # maxIter=maxIter,
-        userCol='user',
-        itemCol='item',
-        ratingCol='rating',
-        nonnegative=False
-    )
+def score_model(estimator, eval_name, evaluator, baseline=False):
+    if baseline:
+        eval_name = 'Baseline {}'.format(eval_name)
 
     model = estimator.fit(train_df)
 
@@ -126,6 +97,44 @@ def eval_model(parameters):
     print('{} score on Test: {}'.format(eval_name, test_score))
     print('=========================================')
     print('')
+
+    return train_score, test_score
+
+
+def eval_model(parameters):
+    print("Parameters:")
+    pprint(parameters)
+    print()
+
+    rank = int(parameters['rank'])
+    regParam = parameters['regParam']
+    lambda_1 = parameters['lambda_1']
+    lambda_2 = parameters['lambda_2']
+    # maxIter = int(parameters['maxIter'])
+
+    estimator = Recommender(
+        useALS=True,
+        useBias=True,
+        rank=rank,
+        regParam=regParam,
+        lambda_1=lambda_1,
+        lambda_2=lambda_2,
+        lambda_3=0.0,
+        # maxIter=maxIter,
+        userCol='user',
+        itemCol='item',
+        ratingCol='rating',
+        nonnegative=False
+    )
+
+    # eval_name = 'RMSE'
+    # evaluator = RegressionEvaluator(
+    #     metricName="rmse", labelCol="rating", predictionCol="prediction")  
+
+    eval_name = 'NDCG10'
+    evaluator = NDCG10Evaluator(spark)
+
+    train_score, test_score = score_model(estimator, eval_name, evaluator)
 
     return {'loss': test_score, 'status': hyperopt.STATUS_OK}
 
@@ -182,9 +191,6 @@ def save_trials():
 
 
 def get_baseline_score():
-    eval_name = 'NDCG10'
-    evaluator = NDCG10Evaluator(spark)
-
     estimator = Recommender(
         useALS=False,
         useBias=True,
@@ -200,19 +206,10 @@ def get_baseline_score():
         nonnegative=False
     )
 
-    model = estimator.fit(train_df)
+    eval_name = 'NDCG10'
+    evaluator = NDCG10Evaluator(spark)
 
-    train_predictions_df = model.transform(train_df)
-    test_predictions_df = model.transform(test_df)
-
-    train_score = evaluator.evaluate(train_predictions_df)
-    test_score = evaluator.evaluate(test_predictions_df)
-
-    print('=========================================')
-    print('Baseline {} score on Train: {}'.format(eval_name, train_score))
-    print('Baseline {} score on Test: {}'.format(eval_name, test_score))
-    print('=========================================')
-    print('')
+    train_score, test_score = score_model(estimator, eval_name, evaluator, baseline=True)
 
 
 def main():
