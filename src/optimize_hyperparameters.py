@@ -64,7 +64,7 @@ def loguniform_int(name, lower, upper):
 def setup_parameter_space():
     parameter_space = {
         'rank': uniform_int('rank', 1, 250),
-        'regParam': hyperopt.hp.loguniform('regParam', np.log(0.001), np.log(10)),
+        'regParam': hyperopt.hp.uniform('regParam', 0.001, 10),
         'lambda_1': hyperopt.hp.uniform('lambda_1', 0, 10),
         'lambda_2': hyperopt.hp.uniform('lambda_2', 0, 10),
         # 'maxIter': uniform_int('maxIter', 1, 15)

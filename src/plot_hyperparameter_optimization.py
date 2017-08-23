@@ -49,9 +49,9 @@ def trials_to_dataframe(trials):
 def print_best(trials_df):
     print('Number of trials: {}'.format(trials_df.shape[0]))
 
-    print('Top 5 scores:')
+    print('Top 10 scores:')
     print('=============')
-    print(trials_df.sort_values(by='loss').head(5))
+    print(trials_df.sort_values(by='loss').head(10))
 
 
 def plot_hyperparameter_optimization(trials_df):
@@ -77,7 +77,7 @@ def plot_hyperparameter_optimization(trials_df):
 def plot_parameter_dependencies(trials_df):
     parameters = [col for col in trials_df.columns if col != 'loss']
 
-    param_combos = list(combinations(parameters, 2))
+    param_combos = [item[::-1] for item in combinations(parameters, 2)]
     num_combos = len(param_combos)
 
     rows = int(math.sqrt(num_combos))

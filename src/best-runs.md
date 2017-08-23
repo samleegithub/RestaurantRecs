@@ -21,3 +21,7 @@ Baseline NDCG10 score on Test: 0.06572229723683976
 Baseline NDCG10 score on Train: 0.060980705775114497
 Baseline NDCG10 score on Test: 0.06528962112047809
 =========================================
+=========================================
+Baseline NDCG10 score on Train: 0.06106922314702001
+Baseline NDCG10 score on Test: 0.06518533606727206
+=========================================
