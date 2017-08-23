@@ -64,7 +64,7 @@ def loguniform_int(name, lower, upper):
 def setup_parameter_space():
     parameter_space = {
         'rank': uniform_int('rank', 1, 250),
-        'regParam': hyperopt.hp.loguniform('regParam', np.log(0.001), np.log(2)),
+        'regParam': hyperopt.hp.loguniform('regParam', np.log(0.001), np.log(10)),
         'lambda_1': hyperopt.hp.uniform('lambda_1', 0, 10),
         'lambda_2': hyperopt.hp.uniform('lambda_2', 0, 10),
         # 'maxIter': uniform_int('maxIter', 1, 15)
@@ -111,8 +111,15 @@ def eval_model(parameters):
     train_predictions_df = model.transform(train_df)
     test_predictions_df = model.transform(test_df)
 
+    print('Train score starting!')
+    start_time = time.monotonic()
     train_score = evaluator.evaluate(train_predictions_df)
+    print('Train score done in {} seconds'.format(time.monotonic() - start_time))
+
+    print('Test score starting!')
+    start_time = time.monotonic()
     test_score = evaluator.evaluate(test_predictions_df)
+    print('Train score done in {} seconds'.format(time.monotonic() - start_time))
 
     print('=========================================')
     print('{} score on Train: {}'.format(eval_name, train_score))
