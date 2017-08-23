@@ -30,7 +30,8 @@ spark = (
 # ratings_filename = '../data/ratings_ugt5_igt5'
 # ratings_filename = '../data/ratings_ugt10_igt10'
 ratings_filename = '../data/ratings_ugt9_igt9'
-model_filename = '{}.hyperopt'.format(ratings_filename)
+suffix = '_unadj'
+model_filename = '{}{}.hyperopt'.format(ratings_filename, suffix)
 
 print('Ratings filename: {}'.format(ratings_filename))
 print('hyperopt filename: {}'.format(model_filename))
@@ -136,13 +137,11 @@ def optimize(parameter_space):
     model_path = Path(model_filename)
 
     if model_path.is_file():
-        print('Found saved Trials! Loading...')
         # Load an already saved trials object, and increase the max
         with open(model_filename, 'rb') as f:
             trials = pickle.load(f)
+
         max_trials = len(trials.trials) + trials_step
-        print('Rerunning from {} trials to {} (+{}) trials'
-            .format(len(trials.trials), max_trials, trials_step))
 
     algo_tpe = partial(
         hyperopt.tpe.suggest,

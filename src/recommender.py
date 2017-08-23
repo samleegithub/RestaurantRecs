@@ -659,8 +659,8 @@ class RecommenderModel(Model):
                 final_prediction_df = (
                     self.prediction_df
                     .crossJoin(self.rating_stats_df)
-                    .crossJoin(self.prediction_stats_df)
-                    .crossJoin(self.residual_stats_df)
+                    # .crossJoin(self.prediction_stats_df)
+                    # .crossJoin(self.residual_stats_df)
                     .join(self.user_bias_df, on='user')
                     .join(self.item_bias_df, on='item')
                     .fillna({
@@ -671,12 +671,13 @@ class RecommenderModel(Model):
                         'prediction',
                         (
                             F.coalesce(
-                                F.col('prediction') - F.col('avg_prediction'),
-                                F.lit(0.0)
+                                F.col('prediction')
+                                # - F.col('avg_prediction')
+                                , F.lit(0.0)
                             )
-                            * F.col('stddev_residual')
-                            / F.col('stddev_prediction')
-                            + F.col('avg_residual')
+                            # * F.col('stddev_residual')
+                            # / F.col('stddev_prediction')
+                            # + F.col('avg_residual')
                             + F.col('avg_rating')
                             + F.col('user_bias')
                             + F.col('item_bias')
@@ -696,15 +697,18 @@ class RecommenderModel(Model):
                     self.prediction_df
                     .dropna(how='all', subset=['prediction'])
                     # .fillna({'prediction': F.col('avg_prediction')})
-                    .crossJoin(self.residual_stats_df)
-                    .crossJoin(self.prediction_stats_df)
-                    .withColumn(
-                        'prediction',
-                        (F.col('prediction') - F.col('avg_prediction'))
-                        * F.col('stddev_residual')
-                        / F.col('stddev_prediction')
-                        + F.col('avg_residual')
-                    )
+                    # .crossJoin(self.residual_stats_df)
+                    # .crossJoin(self.prediction_stats_df)
+                    # .withColumn(
+                    #     'prediction',
+                    #     (
+                    #         F.col('prediction')
+                    #         - F.col('avg_prediction')
+                    #     )
+                    #     * F.col('stddev_residual')
+                    #     / F.col('stddev_prediction')
+                    #     + F.col('avg_residual')
+                    # )
                 )
         else:
             final_prediction_df = (

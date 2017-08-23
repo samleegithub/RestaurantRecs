@@ -1,3 +1,4 @@
+import seaborn as sns
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
@@ -11,9 +12,7 @@ from itertools import combinations
 import math
 
 
-def load_trials(ratings_filename):
-    model_filename = '{}.hyperopt'.format(ratings_filename)
-
+def load_trials(model_filename):
     model_path = Path(model_filename)
 
     if model_path.is_file():
@@ -26,13 +25,7 @@ def load_trials(ratings_filename):
 
     else:
         print('Error: file {} not found'.format(model_filename))
-        return None
-
-
-def print_best(df):
-    print('Top 5 scores:')
-    print('=============')
-    print(df.sort_values(by='loss').head(5))
+        exit()
 
 
 def trials_to_dataframe(trials):
@@ -47,10 +40,16 @@ def trials_to_dataframe(trials):
     
     trials_df = pd.DataFrame(data)
 
-    print(trials_df.info())
+    # print(trials_df.info())
 
     return trials_df
-    
+
+
+def print_best(trials_df):
+    print('Top 5 scores:')
+    print('=============')
+    print(trials_df.sort_values(by='loss').head(5))
+
 
 def plot_hyperparameter_optimization(trials_df):
     parameters = [col for col in trials_df.columns if col != 'loss']
@@ -82,7 +81,7 @@ def plot_parameter_dependencies(trials_df):
     else:
         cols = num_combos // rows + 1
 
-    print(param_combos)
+    # print(param_combos)
 
     f, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(15,9))
     axes = axes.flatten()
@@ -91,7 +90,7 @@ def plot_parameter_dependencies(trials_df):
         x = trials_df[param_combo[0]]
         y = trials_df[param_combo[1]]
         c = trials_df['loss']
-        axes[i].scatter(x, y, s=20, linewidth=0.01, alpha=0.5, c=c, cmap='winter')
+        axes[i].scatter(x, y, s=20, linewidth=0.01, alpha=0.5, c=c, cmap='tab20b')
         axes[i].set_title('{} vs. {}'.format(param_combo[1], param_combo[0]))
         axes[i].set_xlabel(param_combo[0])
         axes[i].set_ylabel(param_combo[1])
@@ -102,12 +101,14 @@ def plot_parameter_dependencies(trials_df):
 
 def main():
 
-    model_filename = '../data/ratings_ugt9_igt9'
+    ratings_filename = '../data/ratings_ugt9_igt9'
+    suffix = '_unadj'
+    model_filename = '{}{}.hyperopt'.format(ratings_filename, suffix)
 
     trials = load_trials(model_filename)
     trials_df = trials_to_dataframe(trials)
     print_best(trials_df)
-    # plot_hyperparameter_optimization(trials_df)
+    plot_hyperparameter_optimization(trials_df)
     plot_parameter_dependencies(trials_df)
 
 
