@@ -1,6 +1,7 @@
-import seaborn as sns
+# import seaborn as sns
 import matplotlib.pyplot as plt
-plt.style.use('ggplot')
+# plt.style.use('ggplot')
+# plt.style.use('dark_background')
 
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
@@ -46,6 +47,8 @@ def trials_to_dataframe(trials):
 
 
 def print_best(trials_df):
+    print('Number of trials: {}'.format(trials_df.shape[0]))
+
     print('Top 5 scores:')
     print('=============')
     print(trials_df.sort_values(by='loss').head(5))
@@ -55,15 +58,17 @@ def plot_hyperparameter_optimization(trials_df):
     parameters = [col for col in trials_df.columns if col != 'loss']
     cols = len(parameters)
 
-    print(parameters, cols)
     fig, axes = plt.subplots(nrows=1, ncols=cols, figsize=(15,9))
     axes = axes.flatten()
-    cmap = plt.cm.jet
+    cmap = plt.cm.hsv
     for i, val in enumerate(parameters):
         x = trials_df[val]
         y = trials_df['loss']
-        axes[i].scatter(x, y, s=20, linewidth=0.01, alpha=0.5, c=cmap(float(i)/cols))
-        axes[i].set_title(val)
+        axes[i].scatter(x, y, s=20, linewidth=0.01, alpha=0.9, c=cmap(float(i)/cols))
+        axes[i].set_title('loss vs. {}'.format(val))
+        axes[i].set_xlabel(val)
+        axes[i].set_ylabel('loss')
+        axes[i].set_facecolor("black")
 
     plt.tight_layout()
     plt.show()
@@ -90,10 +95,11 @@ def plot_parameter_dependencies(trials_df):
         x = trials_df[param_combo[0]]
         y = trials_df[param_combo[1]]
         c = trials_df['loss']
-        axes[i].scatter(x, y, s=20, linewidth=0.01, alpha=0.5, c=c, cmap='tab20b')
+        axes[i].scatter(x, y, s=20, linewidth=0.01, alpha=0.9, c=c, cmap='gnuplot2_r')
         axes[i].set_title('{} vs. {}'.format(param_combo[1], param_combo[0]))
         axes[i].set_xlabel(param_combo[0])
         axes[i].set_ylabel(param_combo[1])
+        axes[i].set_facecolor("black")
 
     plt.tight_layout()
     plt.show()
