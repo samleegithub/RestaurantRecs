@@ -12,8 +12,9 @@ from functools import partial
 from pprint import pprint
 import pickle
 from pathlib import Path
-import signal
+import random
 
+random.seed(8783)
 
 spark = (
     ps.sql.SparkSession.builder
@@ -30,7 +31,7 @@ spark = (
 # ratings_filename = '../data/ratings_ugt5_igt5'
 # ratings_filename = '../data/ratings_ugt10_igt10'
 ratings_filename = '../data/ratings_ugt9_igt9'
-suffix = '_unadj'
+suffix = '_unadj_nobias'
 model_filename = '{}{}.hyperopt'.format(ratings_filename, suffix)
 
 print('Ratings filename: {}'.format(ratings_filename))
@@ -65,8 +66,8 @@ def setup_parameter_space():
     parameter_space = {
         'rank': uniform_int('rank', 1, 250),
         'regParam': hyperopt.hp.uniform('regParam', 0.001, 10),
-        'lambda_1': hyperopt.hp.uniform('lambda_1', 0, 10),
-        'lambda_2': hyperopt.hp.uniform('lambda_2', 0, 10),
+        # 'lambda_1': hyperopt.hp.uniform('lambda_1', 0, 10),
+        # 'lambda_2': hyperopt.hp.uniform('lambda_2', 0, 10),
         # 'maxIter': uniform_int('maxIter', 1, 15)
     }
 
@@ -108,17 +109,17 @@ def eval_model(parameters):
 
     rank = int(parameters['rank'])
     regParam = parameters['regParam']
-    lambda_1 = parameters['lambda_1']
-    lambda_2 = parameters['lambda_2']
+    # lambda_1 = parameters['lambda_1']
+    # lambda_2 = parameters['lambda_2']
     # maxIter = int(parameters['maxIter'])
 
     estimator = Recommender(
         useALS=True,
-        useBias=True,
+        useBias=False,
         rank=rank,
         regParam=regParam,
-        lambda_1=lambda_1,
-        lambda_2=lambda_2,
+        # lambda_1=lambda_1,
+        # lambda_2=lambda_2,
         lambda_3=0.0,
         # maxIter=maxIter,
         userCol='user',
@@ -181,7 +182,8 @@ def optimize(parameter_space):
         max_evals=max_trials,
     )
 
-    print('Best: {}'.format(best))
+    print('Best:')
+    pprint(best)
 
 
 def save_trials():

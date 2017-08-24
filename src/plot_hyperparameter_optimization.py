@@ -89,7 +89,10 @@ def plot_parameter_dependencies(trials_df):
     # print(param_combos)
 
     f, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(15,9))
-    axes = axes.flatten()
+    if rows > 1 or cols > 1:
+        axes = axes.flatten()
+    else:
+        axes = [axes]
 
     for i, param_combo in enumerate(param_combos):
         x = trials_df[param_combo[0]]
@@ -108,7 +111,7 @@ def plot_parameter_dependencies(trials_df):
 def main():
 
     ratings_filename = '../data/ratings_ugt9_igt9'
-    suffix = '_unadj'
+    suffix = '_unadj_nobias'
     model_filename = '{}{}.hyperopt'.format(ratings_filename, suffix)
 
     trials = load_trials(model_filename)

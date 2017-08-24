@@ -1,6 +1,13 @@
 ---------------------
 - ratings_ugt9_igt9 -
 ---------------------
+random.seed(8783)
+=========================================
+Baseline NDCG10 score on Train: 0.06137344018280899
+Baseline NDCG10 score on Test: 0.06495311100437717
+=========================================
+
+Other runs:
 =========================================
 Baseline NDCG10 score on Train: 0.06093638001762125
 Baseline NDCG10 score on Test: 0.06515667599600061

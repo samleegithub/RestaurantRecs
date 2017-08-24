@@ -139,8 +139,8 @@ def get_user_factors(user_ratings_df):
         .withColumn(
             'rating',
             F.col('rating')
-            - F.col('avg_rating')
-            - F.col('item_bias')
+            # - F.col('avg_rating')
+            # - F.col('item_bias')
         )
     )
 
@@ -201,9 +201,9 @@ def make_new_user_predictions(user_ratings_df):
                 # / F.col('stddev_res_prediction')
                 # + F.col('avg_residual')
                 # + F.col('avg_rating')
-                + F.col('item_bias')
+                # + F.col('item_bias')
             )
-            * (1 - 1 / F.sqrt(F.col('count_item_rating')))
+            # * (1 - 1 / F.sqrt(F.col('count_item_rating')))
         )
         .filter(F.col('prediction') > 0)
     )
