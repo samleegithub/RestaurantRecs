@@ -25,9 +25,6 @@ spark = (
 # Load restaurant metadata
 restaurants_df = spark.read.parquet('../data/restaurants')
 
-# Load restaurant discount factors
-# discount_factor_df = spark.read.parquet('../data/discount_factor')
-
 # Load restaurant ids into mapping dataframe
 restaurant_id_map = []
 index = 0
@@ -139,13 +136,13 @@ def get_user_factors(user_ratings_df):
         .withColumn(
             'rating',
             F.col('rating')
-            # - F.col('avg_rating')
-            # - F.col('item_bias')
+            - F.col('avg_rating')
+            - F.col('item_bias')
         )
     )
 
     # filtered_item_factors_df.printSchema()
-    # print(filtered_item_factors_df.show(100))
+    # print(filtered_item_factors_df.show(100, truncate=False))
 
     filtered_item_factors = []
     item_ratings = []
@@ -195,17 +192,18 @@ def make_new_user_predictions(user_ratings_df):
             (
                 (
                     F.col('res_prediction')
-                    # - F.col('avg_res_prediction')
+                    - F.col('avg_res_prediction')
                 )
-                # * F.col('stddev_residual')
-                # / F.col('stddev_res_prediction')
-                # + F.col('avg_residual')
-                # + F.col('avg_rating')
-                # + F.col('item_bias')
+                * F.col('stddev_residual')
+                / F.col('stddev_res_prediction')
+                # / 2
+                + F.col('avg_residual')
+                + F.col('avg_rating')
+                + F.col('item_bias')
             )
-            # * (1 - 1 / F.sqrt(F.col('count_item_rating')))
+            # * (1 - 1 / F.pow(F.col('count_item_rating'), 0.6))
         )
-        .filter(F.col('prediction') > 0)
+        # .filter(F.col('prediction') > 0)
     )
 
     predicted_rating_stats_df = (
@@ -217,22 +215,22 @@ def make_new_user_predictions(user_ratings_df):
     )
 
     # print('prediction_df')
-    # prediction_df.show()
+    # prediction_df.show(truncate=False)
 
-    # print('predicted_rating_df')
-    # predicted_rating_df.show()
+    print('predicted_rating_df')
+    predicted_rating_df.show(truncate=False)
 
     print('residual_stats_df')
-    residual_stats_df.show()
+    residual_stats_df.show(truncate=False)
 
     print('res_prediction_stats_df')
-    res_prediction_stats_df.show()
+    res_prediction_stats_df.show(truncate=False)
 
     print('rating_stats_df')
-    rating_stats_df.show()
+    rating_stats_df.show(truncate=False)
 
     print('predicted_rating_stats_df')
-    predicted_rating_stats_df.show()
+    predicted_rating_stats_df.show(truncate=False)
 
     return predicted_rating_df
 
@@ -299,7 +297,7 @@ def recommend():
     )
 
     # prediction_data_df.printSchema()
-    # print(prediction_data_df.show(20))
+    # print(prediction_data_df.show(20, truncate=False))
 
 
     results = {}

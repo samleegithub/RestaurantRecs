@@ -2,33 +2,27 @@
 - ratings_ugt9_igt9 -
 ---------------------
 random.seed(8783)
+
+NDCG10 without item and user bias:
 =========================================
-Baseline NDCG10 score on Train: 0.06137344018280899
-Baseline NDCG10 score on Test: 0.06495311100437717
+Baseline NDCG10 score on Train: 0.06413861739821258
+Baseline NDCG10 score on Test: 0.06670934647930049
 =========================================
 
-Other runs:
+NDCG10 with item and user bias
 =========================================
-Baseline NDCG10 score on Train: 0.06093638001762125
-Baseline NDCG10 score on Test: 0.06515667599600061
+Baseline NDCG10 score on Train: 0.06151133782004903
+Baseline NDCG10 score on Test: 0.06478062391250017
 =========================================
+
+RMSE without item and user bias
 =========================================
-Baseline NDCG10 score on Train: 0.060826938743210324
-Baseline NDCG10 score on Test: 0.06556616528353776
+Baseline RMSE score on Train: 1.0322637757740036
+Baseline RMSE score on Test: 1.0336147414921362
 =========================================
+
+RMSE with item and user bias
 =========================================
-Baseline NDCG10 score on Train: 0.06104689188456203
-Baseline NDCG10 score on Test: 0.06495524715688716
-=========================================
-=========================================
-Baseline NDCG10 score on Train: 0.06074151268713679
-Baseline NDCG10 score on Test: 0.06572229723683976
-=========================================
-=========================================
-Baseline NDCG10 score on Train: 0.060980705775114497
-Baseline NDCG10 score on Test: 0.06528962112047809
-=========================================
-=========================================
-Baseline NDCG10 score on Train: 0.06106922314702001
-Baseline NDCG10 score on Test: 0.06518533606727206
+Baseline RMSE score on Train: 0.880858378758729
+Baseline RMSE score on Test: 0.9570802737035936
 =========================================

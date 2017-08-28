@@ -381,9 +381,9 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
         # print('ratings_stats_df:')
         # rating_stats_df.show()
 
-        if not self.getUseALS():
-            self.setLambda_1(0.0)
-            self.setLambda_2(0.0)
+        # if not self.getUseALS():
+        #     self.setLambda_1(0.0)
+        #     self.setLambda_2(0.0)
 
         item_bias_df = (
             ratings_df
@@ -403,12 +403,13 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
             )
             .withColumn(
                 'stderr_diffs_item_rating',
-                F.col('stddev_diffs_item_rating') / F.sqrt('count_item_rating')
+                (self.getLambda_1() + F.col('stddev_diffs_item_rating'))
+                / F.sqrt('count_item_rating')
             )
             .withColumn(
                 'item_bias',
                 F.col('avg_diffs_item_rating')
-                / (1 + self.getLambda_1() * F.col('stderr_diffs_item_rating'))
+                / (1 +  F.col('stderr_diffs_item_rating'))
             )
             .select(
                 self.getItemCol(),
@@ -447,13 +448,13 @@ class Recommender(Estimator, HasCheckpointInterval, HasMaxIter,
             )
             .withColumn(
                 'stderr_diffs_user_rating',
-                F.col('stddev_diffs_user_rating') / F.sqrt('count_user_rating')
+                (self.getLambda_2() + F.col('stddev_diffs_user_rating'))
+                / F.sqrt('count_user_rating')
             )
             .withColumn(
                 'user_bias',
                 F.col('avg_diffs_user_rating')
-                / (1 + self.getLambda_2() * F.col('stderr_diffs_user_rating')
-                )
+                / (1 + F.col('stderr_diffs_user_rating'))
             )
             .select(
                 self.getUserCol(),
@@ -682,7 +683,7 @@ class RecommenderModel(Model):
                             + F.col('user_bias')
                             + F.col('item_bias')
                         )
-                        # * (1 - (self.lambda_3 / F.sqrt(F.col('count_item_rating'))))
+                        # * (1 - (1 / F.pow(F.col('count_item_rating')), self.lambda_3))
                     )
                    .select(
                         'user',

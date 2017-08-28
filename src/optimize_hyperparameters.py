@@ -13,6 +13,9 @@ from pprint import pprint
 import pickle
 from pathlib import Path
 import random
+from surprise import SVD
+from surprise import Dataset
+from surprise import evaluate, print_perf
 
 random.seed(8783)
 
@@ -31,7 +34,7 @@ spark = (
 # ratings_filename = '../data/ratings_ugt5_igt5'
 # ratings_filename = '../data/ratings_ugt10_igt10'
 ratings_filename = '../data/ratings_ugt9_igt9'
-suffix = '_unadj_nobias'
+suffix = '_v3_ndcg10'
 model_filename = '{}{}.hyperopt'.format(ratings_filename, suffix)
 
 print('Ratings filename: {}'.format(ratings_filename))
@@ -49,6 +52,13 @@ print_ratings_counts(test_df, 'Test')
 
 trials = hyperopt.Trials()
 
+# eval_name = 'RMSE'
+# evaluator = RegressionEvaluator(
+#     metricName="rmse", labelCol="rating", predictionCol="prediction")  
+
+eval_name = 'NDCG10'
+evaluator = NDCG10Evaluator(spark)
+
 
 def uniform_int(name, lower, upper):
     # `quniform` returns:
@@ -65,18 +75,20 @@ def loguniform_int(name, lower, upper):
 def setup_parameter_space():
     parameter_space = {
         'rank': uniform_int('rank', 1, 250),
-        'regParam': hyperopt.hp.uniform('regParam', 0.001, 10),
-        # 'lambda_1': hyperopt.hp.uniform('lambda_1', 0, 10),
-        # 'lambda_2': hyperopt.hp.uniform('lambda_2', 0, 10),
+        'regParam': hyperopt.hp.loguniform('regParam', np.log(0.001), np.log(5)),
+        'lambda_1': hyperopt.hp.loguniform('lambda_1', np.log(0.001), np.log(10)),
+        'lambda_2': hyperopt.hp.loguniform('lambda_2', np.log(0.001), np.log(10)),
         # 'maxIter': uniform_int('maxIter', 1, 15)
     }
 
     return parameter_space
 
 
-def score_model(estimator, eval_name, evaluator, baseline=False):
+def score_model(estimator, baseline=False):
     if baseline:
-        eval_name = 'Baseline {}'.format(eval_name)
+        local_eval_name = 'Baseline {}'.format(eval_name)
+    else:
+        local_eval_name = eval_name
 
     model = estimator.fit(train_df)
 
@@ -94,8 +106,8 @@ def score_model(estimator, eval_name, evaluator, baseline=False):
     print('Train score done in {} seconds'.format(time.monotonic() - start_time))
 
     print('=========================================')
-    print('{} score on Train: {}'.format(eval_name, train_score))
-    print('{} score on Test: {}'.format(eval_name, test_score))
+    print('{} score on Train: {}'.format(local_eval_name, train_score))
+    print('{} score on Test: {}'.format(local_eval_name, test_score))
     print('=========================================')
     print('')
 
@@ -109,17 +121,17 @@ def eval_model(parameters):
 
     rank = int(parameters['rank'])
     regParam = parameters['regParam']
-    # lambda_1 = parameters['lambda_1']
-    # lambda_2 = parameters['lambda_2']
+    lambda_1 = parameters['lambda_1']
+    lambda_2 = parameters['lambda_2']
     # maxIter = int(parameters['maxIter'])
 
     estimator = Recommender(
         useALS=True,
-        useBias=False,
+        useBias=True,
         rank=rank,
         regParam=regParam,
-        # lambda_1=lambda_1,
-        # lambda_2=lambda_2,
+        lambda_1=lambda_1,
+        lambda_2=lambda_2,
         lambda_3=0.0,
         # maxIter=maxIter,
         userCol='user',
@@ -128,14 +140,7 @@ def eval_model(parameters):
         nonnegative=False
     )
 
-    # eval_name = 'RMSE'
-    # evaluator = RegressionEvaluator(
-    #     metricName="rmse", labelCol="rating", predictionCol="prediction")  
-
-    eval_name = 'NDCG10'
-    evaluator = NDCG10Evaluator(spark)
-
-    train_score, test_score = score_model(estimator, eval_name, evaluator)
+    train_score, test_score = score_model(estimator)
 
     return {'loss': test_score, 'status': hyperopt.STATUS_OK}
 
@@ -198,8 +203,8 @@ def get_baseline_score():
         useBias=True,
         rank=10,
         regParam=0.1,
-        lambda_1=0.0,
-        lambda_2=0.0,
+        lambda_1=1E-9, # small number turns off regularization on item bias
+        lambda_2=1E-9, # small number turns off regularization on user bias
         lambda_3=0.0,
         # maxIter=maxIter,
         userCol='user',
@@ -208,10 +213,7 @@ def get_baseline_score():
         nonnegative=False
     )
 
-    eval_name = 'NDCG10'
-    evaluator = NDCG10Evaluator(spark)
-
-    train_score, test_score = score_model(estimator, eval_name, evaluator, baseline=True)
+    train_score, test_score = score_model(estimator, baseline=True)
 
 
 def main():

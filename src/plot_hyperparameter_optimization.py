@@ -13,6 +13,8 @@ from itertools import combinations
 import math
 
 
+LOG_COLUMNS = {'regParam', 'lambda_1', 'lambda_2'}
+
 def load_trials(model_filename):
     model_path = Path(model_filename)
 
@@ -64,11 +66,13 @@ def plot_hyperparameter_optimization(trials_df):
     for i, val in enumerate(parameters):
         x = trials_df[val]
         y = trials_df['loss']
-        axes[i].scatter(x, y, s=20, linewidth=0.01, alpha=0.9, c=cmap(float(i)/cols))
+        axes[i].scatter(x, y, s=20, linewidth=0.01, alpha=0.5, c=cmap(float(i)/cols))
         axes[i].set_title('loss vs. {}'.format(val))
         axes[i].set_xlabel(val)
         axes[i].set_ylabel('loss')
         axes[i].set_facecolor("black")
+        if val in LOG_COLUMNS:
+            axes[i].set_xscale('symlog')
 
     plt.tight_layout()
     plt.show()
@@ -94,15 +98,22 @@ def plot_parameter_dependencies(trials_df):
     else:
         axes = [axes]
 
+    loss = trials_df['loss']
+    c = np.power((loss - np.min(loss)) / (np.max(loss) - np.min(loss)), 0.13)
+    # print(np.mean(c))
+
     for i, param_combo in enumerate(param_combos):
         x = trials_df[param_combo[0]]
         y = trials_df[param_combo[1]]
-        c = trials_df['loss']
-        axes[i].scatter(x, y, s=20, linewidth=0.01, alpha=0.9, c=c, cmap='gnuplot2_r')
+        axes[i].scatter(x, y, s=20, linewidth=0.01, alpha=0.75, c=c, cmap='afmhot_r')
         axes[i].set_title('{} vs. {}'.format(param_combo[1], param_combo[0]))
         axes[i].set_xlabel(param_combo[0])
         axes[i].set_ylabel(param_combo[1])
         axes[i].set_facecolor("black")
+        if param_combo[0] in LOG_COLUMNS:
+            axes[i].set_xscale('symlog')
+        if param_combo[1] in LOG_COLUMNS:
+            axes[i].set_yscale('symlog')
 
     plt.tight_layout()
     plt.show()
@@ -111,7 +122,7 @@ def plot_parameter_dependencies(trials_df):
 def main():
 
     ratings_filename = '../data/ratings_ugt9_igt9'
-    suffix = '_unadj_nobias'
+    suffix = '_v3_ndcg10'
     model_filename = '{}{}.hyperopt'.format(ratings_filename, suffix)
 
     trials = load_trials(model_filename)
