@@ -13,8 +13,10 @@
       'inactiveIcon': 'glyphicon-star-empty',
       'clearable': false,
       'clearableIcon': 'glyphicon-remove',
+      'clearableRemain': false,
       'inline': false,
-      'readonly': false
+      'readonly': false,
+      'copyClasses': true
     };
 
   function starSelector(value) {
@@ -49,8 +51,10 @@
     }
 
     // Copy original classes but the rating class
-    $ratingEl.addClass($input.attr('class'));
-    $ratingEl.removeClass('rating');
+    if (options.copyClasses) {
+      $ratingEl.addClass($input.attr('class'));
+      $ratingEl.removeClass('rating');
+    }
 
     // Render rating icons
     for (var i = options.min; i <= options.max; i++) {
@@ -98,16 +102,20 @@
       var $el = this.$el;
       if (value >= this.options.min && value <= this.options.max) {
         var $selected = $el.find(starSelector(value));
-        toggleActive($selected.prevAll('i').andSelf(), true, options);
+        toggleActive($selected.prevAll('i').addBack(), true, options);
         toggleActive($selected.nextAll('i'), false, options);
       } else {
         toggleActive($el.find(starSelector()), false, options);
       }
       if (!skipClearable) {
-        if (!value || value == this.options['empty-value']) {
-          $el.find(clearSelector).addClass(hiddenClass);
-        } else {
+        if (this.options.clearableRemain) {
           $el.find(clearSelector).removeClass(hiddenClass);
+        } else {
+          if (!value || value == this.options['empty-value']) {
+            $el.find(clearSelector).addClass(hiddenClass);
+          } else {
+            $el.find(clearSelector).removeClass(hiddenClass);
+          }
         }
       }
     },
